@@ -1,0 +1,7 @@
+Bill of Lading
+
+<table><tbody><tr><td>① Shipper/Exporter</td><td>⑪ B/L No. ;</td></tr><tr><td>② Consignee</td><td></td></tr><tr><td>③ Notify Party</td><td></td></tr><tr><td>Pre-Carrage by</td><td>⑥ Place of Receipt</td></tr><tr><td>④ Ocean Vessel</td><td>⑦ Voyage No.</td><td>⑫ Flag</td></tr><tr><td colspan="3">⑤ Port of Loading ⑧ Port of Discharge ⑨ Place of Delivery ⑩ Final Destination (For the Merchant Ref.)</td></tr><tr><td>⑬ Container No. ⑭ Seal No.<br/>Marks &amp; No</td><td>⑮ No. &amp; Kinds of Containers or Packages</td><td>⑯ Description of Goods</td><td>⑰ Gross Weight</td><td>Measurement</td></tr><tr><td>Total No. of Containers or Packages (in words)</td><td></td><td></td><td></td><td></td></tr><tr><td>⑱ Freight and Charges</td><td>⑲ Revenue tons</td><td>⑳ Rate</td><td>(21) Per</td><td>(22) Prepaid</td><td>⑲ Collect</td></tr><tr><td>(23) Freight prepaid at</td><td>(24) Freight payable at</td><td colspan="4">(26) Place and Date of Issue</td></tr><tr><td></td><td></td><td colspan="4">Signature</td></tr><tr><td>Total prepaid in</td><td>(25) No. of original B/L</td><td colspan="4"></td></tr></tbody></table>(27) Laden on board vessel
+
+Date Signature
+
+(28)
