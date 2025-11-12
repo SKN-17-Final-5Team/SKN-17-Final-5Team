@@ -1,0 +1,33 @@
+{
+  "file_name": "BL.pdf",
+  "num_pages": 2,
+  "total_token_count": 616,
+  "total_chunks": 5,
+  "total_images": 0,
+  "pages": [
+    {
+      "page_num": 0,
+      "page_box": [
+        0,
+        0,
+        1588,
+        2246
+      ],
+      "token_count": 497,
+      "num_chunks": 2,
+      "num_images": 0
+    },
+    {
+      "page_num": 1,
+      "page_box": [
+        0,
+        0,
+        1588,
+        2246
+      ],
+      "token_count": 119,
+      "num_chunks": 3,
+      "num_images": 0
+    }
+  ]
+}
