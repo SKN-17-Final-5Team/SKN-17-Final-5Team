@@ -1,0 +1,173 @@
+# 해외 인증 데이터 Retriever 검색 테스트
+
+작업자: 한훈
+
+---
+
+## 빠른 시작 (3단계)
+
+### 1. 환경 변수 설정
+
+`.env` 파일에 다음 정보를 추가하세요:
+
+```bash
+# Qdrant Cloud (필수)
+QDRANT_URL=https://your-cluster.qdrant.io
+QDRANT_API_KEY=your-api-key
+
+# OpenAI (필수 - 최고 성능)
+OPENAI_API_KEY=sk-...
+
+# HuggingFace (선택 - 무료이지만 성능 낮음)
+HF_TOKEN=hf_...
+```
+
+### 2. 의존성 설치
+
+```bash
+cd certif_retrieval_test
+pip install -r requirements.txt
+```
+
+### 3. 실행
+
+```bash
+# 기본 RAG 시스템 실행 (대화형 검색)
+python qdrant_rag.py
+
+# 성능 평가 실행 (20개 질문으로 테스트)
+python evaluate_retrieval.py
+
+# 간단한 검색 테스트
+python test_retrieval.py
+```
+
+---
+
+## 📁 주요 파일
+
+| 파일 | 설명 |
+|------|------|
+| `qdrant_rag.py` | **핵심 RAG 시스템** - 임베딩, 검색, 하이브리드 검색 |
+| `evaluate_retrieval.py` | **성능 평가** - Recall@K, MRR 측정 |
+| `certif_doc_convert.py` | CSV → JSONL 변환 |
+| `qa_dataset.json` | 평가용 20개 Q&A 세트 |
+| `프로젝트_진행_요약.md` | **전체 프로젝트 요약** (단계별 진행, 결과 분석) |
+
+---
+
+## 🔧 설정 변경 방법
+
+`qdrant_rag.py`의 `CONFIG` 딕셔너리를 수정하세요:
+
+```python
+CONFIG = {
+    # 컬렉션 설정
+    "collection_name": "certifications",
+    "use_cloud": True,  # False = 로컬 저장소
+
+    # 임베딩 설정 (권장: OpenAI)
+    "embedding_provider": "openai",  # "huggingface" 또는 "openai"
+    "embedding_model": None,  # None = 기본값 사용
+
+    # 청킹 설정 (권장: 1000자)
+    "chunk_size": 1000,  # None, 500, 1000, 2000
+    "chunk_overlap": 100,
+
+    # 텍스트 필드 (권장: "full")
+    "text_field": "full",  # "auto", "summary", "full", "combined"
+
+    # 검색 설정
+    "top_k": 5,
+    "score_threshold": None  # 예: 0.7
+}
+```
+
+
+
+## 주요 기능
+
+### 1. 의미 기반 검색 (Semantic Search)
+```python
+from qdrant_rag import QdrantCertificationRAG
+
+rag = QdrantCertificationRAG(
+    collection_name="certifications",
+    embedding_provider="openai",
+    chunk_size=1000,
+    use_cloud=True
+)
+
+# 검색
+results = rag.search("미국 의료기기 인증", top_k=5)
+rag.print_results(results)
+```
+
+### 2. 하이브리드 검색 (의미 + 키워드)
+```python
+# BM25 인덱스 구축
+documents = [...]  # JSONL에서 로드
+rag.build_bm25_index(documents, text_field="full")
+
+# 하이브리드 검색
+results = rag.search_hybrid(
+    "510(k) 승인",
+    top_k=5,
+    semantic_weight=0.7,
+    bm25_weight=0.3
+)
+```
+
+### 3. 성능 평가
+```python
+from evaluate_retrieval import RetrievalEvaluator
+
+evaluator = RetrievalEvaluator("qa_dataset.json")
+results = evaluator.compare_configurations(configs, top_k=10)
+```
+
+---
+
+## 🗂️ 데이터 형식
+
+### JSONL 입력 (`output/certifications.jsonl`)
+```json
+{
+  "id": 1,
+  "country": "미국",
+  "category": "의료기기",
+  "cert_type": "제품인증",
+  "main_cert": "FDA",
+  "cert_name": "FDA(의료기기)",
+  "cert_subject": "...(전체 설명)...",
+  "auto_summary": "...(150자 요약)...",
+  "url": "https://..."
+}
+```
+
+### QA 데이터셋 (`qa_dataset.json`)
+```json
+[
+  {
+    "id": 1,
+    "question": "미국에서 의료기기를 판매하려면 어떤 인증이 필요한가요?",
+    "expected_certs": ["FDA(의료기기)"],
+    "category": "의료기기",
+    "difficulty": "easy"
+  }
+]
+```
+
+---
+
+## 상세 문서
+
+- **[프로젝트_진행_요약.md](프로젝트_진행_요약.md)**: 전체 프로젝트 진행 과정, 실험 결과, 학습 내용
+- **[qa_dataset.json](qa_dataset.json)**: 20개 평가 질문 (난이도별)
+- **[evaluation_results_*.json](.)**: 성능 평가 결과
+
+---
+
+**작성일**: 2025년 11월 14일
+**최종 성능**: Recall@3 85%, Recall@5 90%
+**권장**: OpenAI + 전체 텍스트 + 청크 1000자

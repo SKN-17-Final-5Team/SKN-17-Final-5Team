@@ -1,0 +1,304 @@
+{
+  "timestamp": "2025-11-14T14:27:51.192331",
+  "qa_dataset": "qa_dataset.json",
+  "num_questions": 20,
+  "all_results": [
+    {
+      "config": {
+        "name": "no_chunk_openai",
+        "collection_name": "certifications_no_chunk_openai",
+        "chunk_size": null,
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "recreate": false
+      },
+      "recall_1": {
+        "recall": 0.3,
+        "hits": 6,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.45,
+        "hits": 9,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.7,
+        "hits": 14,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.4301388888888889
+      }
+    },
+    {
+      "config": {
+        "name": "chunk_500_openai",
+        "collection_name": "certifications_chunk_500_openai",
+        "chunk_size": 500,
+        "chunk_overlap": 50,
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "recreate": false
+      },
+      "recall_1": {
+        "recall": 0.3,
+        "hits": 6,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.45,
+        "hits": 9,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.7,
+        "hits": 14,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.4301388888888889
+      }
+    },
+    {
+      "config": {
+        "name": "chunk_1000_openai",
+        "collection_name": "certifications_chunk_1000_openai",
+        "chunk_size": 1000,
+        "chunk_overlap": 100,
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "recreate": false
+      },
+      "recall_1": {
+        "recall": 0.3,
+        "hits": 6,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.65,
+        "hits": 13,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.75,
+        "hits": 15,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.4988095238095238
+      }
+    },
+    {
+      "config": {
+        "name": "chunk_2000_openai",
+        "collection_name": "certifications_chunk_2000_openai",
+        "chunk_size": 2000,
+        "chunk_overlap": 200,
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "recreate": false
+      },
+      "recall_1": {
+        "recall": 0.3,
+        "hits": 6,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.5,
+        "hits": 10,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.7,
+        "hits": 14,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.43680555555555556
+      }
+    },
+    {
+      "config": {
+        "name": "no_chunk_hf",
+        "collection_name": "certifications_no_chunk_hf",
+        "chunk_size": null,
+        "embedding_provider": "huggingface",
+        "embedding_model": null,
+        "recreate": true
+      },
+      "recall_1": {
+        "recall": 0.15,
+        "hits": 3,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.2,
+        "hits": 4,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.3,
+        "hits": 6,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.22686507936507935
+      }
+    },
+    {
+      "config": {
+        "name": "chunk_1000_hf",
+        "collection_name": "certifications_chunk_1000_hf_v2",
+        "chunk_size": 1000,
+        "chunk_overlap": 100,
+        "embedding_provider": "huggingface",
+        "embedding_model": null,
+        "recreate": true
+      },
+      "recall_1": {
+        "recall": 0.15,
+        "hits": 3,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.2,
+        "hits": 4,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.3,
+        "hits": 6,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.22686507936507935
+      }
+    },
+    {
+      "config": {
+        "name": "no_chunk_openai_fulltext",
+        "collection_name": "certifications_no_chunk_openai_fulltext",
+        "chunk_size": null,
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "text_field": "full",
+        "recreate": false
+      },
+      "recall_1": {
+        "recall": 0.55,
+        "hits": 11,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.8,
+        "hits": 16,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.9,
+        "hits": 18,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.6879761904761905
+      }
+    },
+    {
+      "config": {
+        "name": "chunk_1000_openai_fulltext",
+        "collection_name": "certifications_chunk_1000_openai_fulltext",
+        "chunk_size": 1000,
+        "chunk_overlap": 100,
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "text_field": "full",
+        "recreate": false
+      },
+      "recall_1": {
+        "recall": 0.5,
+        "hits": 10,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.85,
+        "hits": 17,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.9,
+        "hits": 18,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.6683333333333333
+      }
+    },
+    {
+      "config": {
+        "name": "no_chunk_openai_fulltext_hybrid",
+        "collection_name": "certifications_no_chunk_openai_fulltext",
+        "chunk_size": null,
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "text_field": "full",
+        "use_hybrid": true,
+        "semantic_weight": 0.7,
+        "bm25_weight": 0.3,
+        "recreate": false
+      },
+      "recall_1": {
+        "recall": 0.45,
+        "hits": 9,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.7,
+        "hits": 14,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.9,
+        "hits": 18,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.6104761904761904
+      }
+    },
+    {
+      "config": {
+        "name": "chunk_1000_openai_fulltext_hybrid",
+        "collection_name": "certifications_chunk_1000_openai_fulltext",
+        "chunk_size": 1000,
+        "chunk_overlap": 100,
+        "embedding_provider": "openai",
+        "embedding_model": "text-embedding-3-large",
+        "text_field": "full",
+        "use_hybrid": true,
+        "semantic_weight": 0.7,
+        "bm25_weight": 0.3,
+        "recreate": false
+      },
+      "recall_1": {
+        "recall": 0.3,
+        "hits": 6,
+        "total": 20
+      },
+      "recall_3": {
+        "recall": 0.75,
+        "hits": 15,
+        "total": 20
+      },
+      "recall_5": {
+        "recall": 0.85,
+        "hits": 17,
+        "total": 20
+      },
+      "mrr": {
+        "mrr": 0.5442261904761905
+      }
+    }
+  ],
+  "best_config": "chunk_1000_openai_fulltext"
+}
