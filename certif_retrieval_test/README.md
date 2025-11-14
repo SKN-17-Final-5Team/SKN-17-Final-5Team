@@ -1,10 +1,10 @@
-# 인증 데이터 RAG 검색 시스템 🔍
+# 해외 인증 데이터 Retriever 검색 테스트
 
-**Qdrant 벡터 데이터베이스를 활용한 한국어 인증 정보 의미 기반 검색 시스템**
+작업자: 한훈
 
 ---
 
-## 🎯 빠른 시작 (3단계)
+## 빠른 시작 (3단계)
 
 ### 1. 환경 변수 설정
 
@@ -40,22 +40,6 @@ python evaluate_retrieval.py
 
 # 간단한 검색 테스트
 python test_retrieval.py
-```
-
----
-
-## 📊 검증된 최고 성능 설정
-
-평가 결과 **Recall@3 85%, Recall@5 90%** 달성한 최적 설정:
-
-```python
-{
-    "embedding_provider": "openai",
-    "embedding_model": "text-embedding-3-large",
-    "chunk_size": 1000,
-    "chunk_overlap": 100,
-    "text_field": "full"  # 전체 cert_subject 사용
-}
 ```
 
 ---
@@ -99,25 +83,9 @@ CONFIG = {
 }
 ```
 
----
 
-## 📈 성능 비교 결과
 
-| 설정 | Recall@1 | Recall@3 | Recall@5 |
-|------|----------|----------|----------|
-| **OpenAI + 전체 텍스트 + 청크 1000 (권장)** | **50%** | **85%** | **90%** |
-| OpenAI + 전체 텍스트 + 청킹 없음 | 55% | 80% | 90% |
-| OpenAI + 요약 텍스트 + 청크 1000 | 30% | 65% | 75% |
-| HuggingFace (모든 설정) | 15% | 20% | 30% |
-
-### 핵심 발견
-- ✅ **전체 텍스트 >> 요약**: +31% Recall 향상
-- ✅ **OpenAI >> HuggingFace**: 4배 성능 차이
-- ✅ **하이브리드 검색**: 예상과 달리 성능 하락 (-10%p)
-
----
-
-## 💡 주요 기능
+## 주요 기능
 
 ### 1. 의미 기반 검색 (Semantic Search)
 ```python
@@ -192,65 +160,11 @@ results = evaluator.compare_configurations(configs, top_k=10)
 
 ---
 
-## 📊 평가 지표 설명
-
-- **Recall@K**: 상위 K개 결과에 정답이 포함되는 비율
-  - Recall@1 = 50%: 20개 중 10개가 1등으로 검색됨
-  - Recall@3 = 85%: 20개 중 17개가 상위 3개 안에 포함
-  - Recall@5 = 90%: 20개 중 18개가 상위 5개 안에 포함
-
-- **MRR (Mean Reciprocal Rank)**: 정답 순위의 역수 평균
-  - MRR = 0.668: 평균적으로 1.5등에 정답 등장
-
----
-
-## 💰 비용 안내
-
-### OpenAI 임베딩 (`text-embedding-3-large`)
-- **가격**: $0.13 per 1M tokens
-- **92개 문서 인덱싱**: ~$0.007 (약 10원)
-- **쿼리당**: ~$0.000001 (무시 가능)
-
-### Qdrant Cloud
-- **Free tier**: 1GB 저장소 (충분)
-- **사용량**: ~2.4MB (200 벡터 × 3072차원)
-
-**→ 매우 저렴한 비용으로 고품질 검색 시스템 구축 가능!**
-
----
-
-## 📚 상세 문서
+## 상세 문서
 
 - **[프로젝트_진행_요약.md](프로젝트_진행_요약.md)**: 전체 프로젝트 진행 과정, 실험 결과, 학습 내용
 - **[qa_dataset.json](qa_dataset.json)**: 20개 평가 질문 (난이도별)
 - **[evaluation_results_*.json](.)**: 성능 평가 결과
-
----
-
-## 🔐 보안 주의사항
-
-- `.env` 파일은 절대 Git에 커밋하지 마세요
-- API 키는 환경 변수로만 관리하세요
-- Qdrant Cloud API 키는 읽기 전용으로 설정 권장
-
----
-
-## 🐛 문제 해결
-
-### 타임아웃 오류
-```
-httpx.WriteTimeout: The write operation timed out
-```
-→ `qdrant_rag.py`의 `timeout=300` 설정 확인 (5분)
-
-### BM25 인덱스 미구축 경고
-```
-Warning: BM25 index not built
-```
-→ `rag.build_bm25_index(documents)` 먼저 호출 필요
-
-### 임베딩 모델 다운로드 느림
-→ HuggingFace 모델 첫 실행 시 ~500MB 다운로드 (한 번만)
 
 ---
 
