@@ -15,7 +15,12 @@ load_dotenv()
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 
-qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, check_compatibility=False)
+qdrant_client = QdrantClient(
+    url=QDRANT_URL,
+    api_key=QDRANT_API_KEY,
+    check_compatibility=False,
+    timeout=300  # 5분 타임아웃 (대용량 업로드 대비)
+)
 
 embeddings = OpenAIEmbeddings(
     model="text-embedding-3-large",
@@ -28,10 +33,11 @@ def docs_to_lists(docs):
     ids = [str(i) for i in range(len(docs))]
     return texts, metadatas, ids
 
-def upsert_collection(collection_name, docs, batch_size=50):
+def upsert_collection(collection_name, docs, batch_size=20):
     texts, metadatas, ids = docs_to_lists(docs)
 
     # OpenAI 임베딩 생성
+    print(f"  임베딩 생성 중... ({len(texts)}개)")
     vectors = embeddings.embed_documents(texts)
     vector_size = len(vectors[0])
 
@@ -62,12 +68,16 @@ def upsert_collection(collection_name, docs, batch_size=50):
 
     # 페이로드 크기 제한을 피하기 위한 배치 업로드
     total_points = len(points)
+    total_batches = (total_points + batch_size - 1) // batch_size
+    print(f"  배치 업로드 시작 (총 {total_points}개, 배치 크기: {batch_size})...")
+
     for i in range(0, total_points, batch_size):
         batch = points[i:i + batch_size]
-        qdrant_client.upsert(collection_name=collection_name, points=batch)
-        print(f"  [{collection_name}] Uploaded {min(i + batch_size, total_points)}/{total_points} points")
+        batch_num = i // batch_size + 1
+        qdrant_client.upsert(collection_name=collection_name, points=batch, wait=True)
+        print(f"    - 배치 {batch_num}/{total_batches} 업로드 완료 ({len(batch)}개)")
 
-    print(f"[{collection_name}] {len(docs)}개 문서 업로드 완료")
+    print(f"✓ [{collection_name}] {len(docs)}개 문서 업로드 완료")
     return collection_name
 
 

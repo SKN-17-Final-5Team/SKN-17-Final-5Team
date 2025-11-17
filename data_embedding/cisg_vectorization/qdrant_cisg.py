@@ -242,26 +242,37 @@ def create_collection_if_not_exists(client: QdrantClient, collection_name: str, 
             vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
         )
 
-def upload_to_qdrant(client: QdrantClient, collection_name: str, model_handler: dict, chunks: list):
+def upload_to_qdrant(client: QdrantClient, collection_name: str, model_handler: dict, chunks: list, batch_size: int = 20):
     """
     청크 리스트를 임베딩하여 Qdrant에 'upsert' (추가 또는 덮어쓰기)합니다.
+    대용량 데이터를 처리하기 위해 배치 단위로 업로드합니다.
     """
     texts = [c["text"] for c in chunks]
     print(f"    [QDRANT] 임베딩 계산 중 ({model_handler['name']}, {len(texts)}개)...")
-    
+
     # 모델 핸들러를 사용해 텍스트를 벡터로 변환
     embeddings = model_handler['embed_texts'](texts)
-    
+
     # Qdrant에 저장할 'Point' 객체 생성
     points = [
         PointStruct(id=ch["id"], vector=vec, payload=ch)
         for vec, ch in zip(embeddings, chunks)
     ]
-    
-    print(f"    [QDRANT] upsert 호출 (points={len(points)})...")
-    # 'upsert'는 ID가 없으면 새로 추가하고, ID가 이미 있으면 덮어쓰는 '안전한' 명령어입니다.
-    client.upsert(collection_name=collection_name, points=points, wait=True)
-    print(f"    [QDRANT] {len(points)}개 벡터 업로드/업데이트 완료.")
+
+    # 배치 단위로 업로드
+    total_points = len(points)
+    print(f"    [QDRANT] 배치 업로드 시작 (총 {total_points}개, 배치 크기: {batch_size})...")
+
+    for i in range(0, total_points, batch_size):
+        batch = points[i:i + batch_size]
+        batch_num = i // batch_size + 1
+        total_batches = (total_points + batch_size - 1) // batch_size
+
+        print(f"      - 배치 {batch_num}/{total_batches} 업로드 중 ({len(batch)}개)...")
+        # 'upsert'는 ID가 없으면 새로 추가하고, ID가 이미 있으면 덮어쓰는 '안전한' 명령어입니다.
+        client.upsert(collection_name=collection_name, points=batch, wait=True)
+
+    print(f"    [QDRANT] {total_points}개 벡터 업로드/업데이트 완료.")
 
 
 
@@ -285,8 +296,12 @@ def main_upload():
         if missing_keys:
             raise ValueError(f"누락된 환경 변수: {missing_keys}")
 
-        # Qdrant DB에 연결합니다.
-        qdrant_client = QdrantClient(url=keys['qdrant_url'], api_key=keys['qdrant_api'])
+        # Qdrant DB에 연결합니다. (timeout 증가: 대용량 업로드 대비)
+        qdrant_client = QdrantClient(
+            url=keys['qdrant_url'],
+            api_key=keys['qdrant_api'],
+            timeout=300  # 5분 타임아웃 (기본값: 60초)
+        )
         print("  [메인] Qdrant 및 API 키 로드 완료.")
     except Exception as e:
         print(f"🚨 [오류] 환경 변수 로드 실패. .env 파일에 필요한 키 3개를 모두 설정했는지 확인하세요.")

@@ -4,7 +4,7 @@ from typing import List, Dict, Optional, Literal
 from dotenv import load_dotenv
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
 import numpy as np
 import uuid
 
@@ -13,7 +13,7 @@ load_dotenv()
 
 
 class CertificationQdrant:
-    """Qdrant vector database builder class for certification data"""
+    """인증 데이터를 위한 Qdrant vector database builder 클래스"""
 
     def __init__(
         self,
@@ -24,67 +24,132 @@ class CertificationQdrant:
         chunk_overlap: Optional[int] = 100,
         use_cloud: bool = True
     ):
-        """Initialize RAG system.
+        """RAG 시스템 초기화
 
         Args:
-            collection_name: Qdrant collection name
-            embedding_provider: "openai" (only supported provider)
-            embedding_model: Model name (None = provider default)
-            chunk_size: Text chunk size (None = no chunking)
-            chunk_overlap: Overlap between chunks
-            use_cloud: Use Qdrant Cloud (True) or local (No support)
+            collection_name: Qdrant 컬렉션 이름
+            embedding_provider: "openai" (지원되는 유일한 provider)
+            embedding_model: 모델 이름 (None = provider 기본값)
+            chunk_size: 텍스트 청크 크기 (None = 청킹 안함)
+            chunk_overlap: 청크 간 겹침
+            use_cloud: Qdrant Cloud 사용 (True) 또는 로컬 (지원 안함)
         """
         self.collection_name = collection_name
         self.embedding_provider = embedding_provider
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
-        # Initialize embedding model
+        # Embedding 모델 초기화
         if embedding_provider == "openai":
             self._init_openai_embeddings(embedding_model)
         else:
-            raise ValueError(f"Unsupported embedding provider: {embedding_provider}")
+            raise ValueError(f"지원하지 않는 embedding provider: {embedding_provider}")
 
-        # Initialize Qdrant client
+        # Qdrant 클라이언트 초기화
         if use_cloud:
             self._init_qdrant_cloud()
         else:
-            raise ValueError("Local Qdrant is not supported. Set use_cloud=True.")
+            raise ValueError("로컬 Qdrant는 지원하지 않습니다. use_cloud=True로 설정하세요.")
 
 
     def _init_openai_embeddings(self, model: Optional[str] = None):
-        """Initialize OpenAI embeddings."""
+        """OpenAI embedding 초기화"""
         try:
             from openai import OpenAI
             self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             self.embedding_model_name = model or "text-embedding-3-large"
             self.embedding_dimension = 3072 if "large" in self.embedding_model_name else 1536
-            print(f"✓ OpenAI embeddings initialized: {self.embedding_model_name}")
+            print(f"✓ OpenAI embedding 초기화 완료: {self.embedding_model_name}")
         except ImportError:
-            raise ImportError("Install openai: pip install openai")
+            raise ImportError("openai 설치 필요: pip install openai")
 
 
     def _init_qdrant_cloud(self):
-        """Initialize Qdrant Cloud client."""
+        """Qdrant Cloud 클라이언트 초기화"""
         url = os.getenv("QDRANT_URL")
         api_key = os.getenv("QDRANT_API_KEY")
 
         if not url or not api_key:
-            raise ValueError("Set QDRANT_URL and QDRANT_API_KEY in .env")
+            raise ValueError(".env에 QDRANT_URL과 QDRANT_API_KEY를 설정하세요")
 
-        self.client = QdrantClient(url=url, api_key=api_key)
-        print(f"✓ Connected to Qdrant Cloud")
+        self.client = QdrantClient(
+            url=url,
+            api_key=api_key,
+            timeout=300  # 5분 타임아웃 (대용량 업로드 대비)
+        )
+        print(f"✓ Qdrant Cloud 연결 완료")
 
+
+    def _ensure_payload_index(self) -> None:
+        """data_source 필드에 payload index가 있는지 확인하고 없으면 생성"""
+        try:
+            # data_source 필드에 keyword index 생성
+            self.client.create_payload_index(
+                collection_name=self.collection_name,
+                field_name="data_source",
+                field_schema="keyword"
+            )
+            print(f"✓ 'data_source' 필드 인덱스 생성 완료")
+        except Exception as e:
+            # 이미 인덱스가 존재하면 무시
+            if "already exists" in str(e).lower():
+                pass
+            else:
+                # 다른 에러는 무시하고 계속 진행 (인덱스가 이미 있을 수 있음)
+                pass
+
+    def delete_by_data_source(self, data_source: str) -> None:
+        """
+        특정 data_source의 포인트만 삭제
+
+        Args:
+            data_source: 삭제할 데이터 소스 (예: 'certification', 'fraud', etc.)
+        """
+        try:
+            # payload index 확인 및 생성
+            self._ensure_payload_index()
+
+            # 기존 포인트 수 확인
+            collection_info = self.client.get_collection(self.collection_name)
+            before_count = collection_info.points_count
+
+            print(f"삭제 전 총 포인트 수: {before_count}")
+            print(f"'{data_source}' 데이터 소스 삭제 중...")
+
+            # data_source 필터로 삭제
+            self.client.delete(
+                collection_name=self.collection_name,
+                points_selector=Filter(
+                    must=[
+                        FieldCondition(
+                            key="data_source",
+                            match=MatchValue(value=data_source)
+                        )
+                    ]
+                )
+            )
+
+            # 삭제 후 포인트 수 확인
+            collection_info = self.client.get_collection(self.collection_name)
+            after_count = collection_info.points_count
+            deleted_count = before_count - after_count
+
+            print(f"✓ '{data_source}' 데이터 {deleted_count}개 삭제 완료")
+            print(f"✓ 삭제 후 총 포인트 수: {after_count}")
+
+        except Exception as e:
+            print(f"삭제 중 오류 발생: {e}")
+            raise
 
     def create_collection(self, recreate: bool = False) -> None:
-        """Create collection if it doesn't exist."""
+        """컬렉션이 없으면 생성"""
         collections = self.client.get_collections().collections
         exists = any(c.name == self.collection_name for c in collections)
 
         if exists and recreate:
             self.client.delete_collection(self.collection_name)
             exists = False
-            print(f"✓ Deleted existing collection: {self.collection_name}")
+            print(f"✓ 기존 컬렉션 삭제 완료: {self.collection_name}")
 
         if not exists:
             self.client.create_collection(
@@ -94,12 +159,12 @@ class CertificationQdrant:
                     distance=Distance.COSINE
                 )
             )
-            print(f"✓ Created collection: {self.collection_name}")
+            print(f"✓ 컬렉션 생성 완료: {self.collection_name}")
         else:
-            print(f"✓ Collection exists: {self.collection_name}")
+            print(f"✓ 컬렉션 존재: {self.collection_name}")
 
     def embed_text(self, text: str) -> List[float]:
-        """Generate embedding for text using OpenAI."""
+        """OpenAI를 사용하여 텍스트의 임베딩 생성"""
         response = self.openai_client.embeddings.create(
             model=self.embedding_model_name,
             input=text
@@ -107,7 +172,7 @@ class CertificationQdrant:
         return response.data[0].embedding
 
     def chunk_text(self, text: str) -> List[str]:
-        """Split text into chunks."""
+        """텍스트를 청크로 분할"""
         if not self.chunk_size:
             return [text]
 
@@ -127,34 +192,39 @@ class CertificationQdrant:
         self,
         jsonl_path: str,
         text_field: Literal["auto", "summary", "full", "combined"] = "full",
-        batch_size: int = 32
+        batch_size: int = 32,
+        update_existing: bool = False
     ) -> int:
-        """Load and index documents from JSONL file.
+        """JSONL 파일에서 문서를 로드하고 인덱싱
 
         Args:
-            jsonl_path: Path to JSONL file
-            text_field: Which field to embed ("auto", "summary", "full", "combined")
-            batch_size: Batch size for embedding
+            jsonl_path: JSONL 파일 경로
+            text_field: 임베딩할 필드 ("auto", "summary", "full", "combined")
+            batch_size: 임베딩 배치 크기
+            update_existing: True면 기존 certification 데이터를 삭제하고 새로 업로드
 
         Returns:
-            Number of chunks indexed
+            인덱싱된 청크 수
         """
-        print(f"\nLoading documents from: {jsonl_path}")
+        # 업데이트 모드: 기존 certification 데이터 삭제
+        if update_existing:
+            self.delete_by_data_source('certification')
+        print(f"\n문서 로드 중: {jsonl_path}")
 
-        # Load documents
+        # 문서 로드
         documents = []
         with open(jsonl_path, 'r', encoding='utf-8') as f:
             for line in f:
                 documents.append(json.loads(line))
 
-        print(f"✓ Loaded {len(documents)} documents")
+        print(f"✓ {len(documents)}개 문서 로드 완료")
 
-        # Prepare metadata and texts
+        # 메타데이터 및 텍스트 준비
         doc_metadata = []
         texts_to_embed = []
 
         for doc in documents:
-            # Select text field
+            # 텍스트 필드 선택
             if text_field == "summary":
                 text = doc.get('auto_summary', '') or doc.get('cert_subject', '')
             elif text_field == "full":
@@ -164,7 +234,7 @@ class CertificationQdrant:
             else:  # auto
                 text = doc.get('auto_summary', '') or doc.get('cert_subject', '')
 
-            # Chunk text
+            # 텍스트 청킹
             chunks = self.chunk_text(text)
 
             for chunk_idx, chunk in enumerate(chunks):
@@ -176,10 +246,10 @@ class CertificationQdrant:
                 })
                 texts_to_embed.append(chunk)
 
-        print(f"✓ Created {len(texts_to_embed)} chunks from {len(documents)} documents")
+        print(f"✓ {len(documents)}개 문서에서 {len(texts_to_embed)}개 청크 생성 완료")
 
-        # Generate embeddings in batches
-        print(f"\nGenerating embeddings...")
+        # 배치 단위로 임베딩 생성
+        print(f"\n임베딩 생성 중...")
         all_embeddings = []
 
         for i in range(0, len(texts_to_embed), batch_size):
@@ -194,12 +264,12 @@ class CertificationQdrant:
             all_embeddings.extend(batch_embeddings)
 
             if (i + batch_size) % (batch_size * 10) == 0:
-                print(f"  Progress: {min(i + batch_size, len(texts_to_embed))}/{len(texts_to_embed)}")
+                print(f"  진행: {min(i + batch_size, len(texts_to_embed))}/{len(texts_to_embed)}")
 
-        print(f"✓ Generated {len(all_embeddings)} embeddings")
+        print(f"✓ {len(all_embeddings)}개 임베딩 생성 완료")
 
-        # Create points
-        print(f"\nCreating Qdrant points...")
+        # Point 생성
+        print(f"\nQdrant point 생성 중...")
         points = []
 
         for metadata, embedding in zip(doc_metadata, all_embeddings):
@@ -241,25 +311,28 @@ class CertificationQdrant:
             )
             points.append(point)
 
-        # Upload to Qdrant
-        upload_batch_size = 50
-        print(f"Uploading to Qdrant (batch_size={upload_batch_size})...")
+        # Qdrant에 업로드
+        upload_batch_size = 20  # 타임아웃 방지를 위해 50에서 20으로 축소
+        print(f"Qdrant 업로드 중 (batch_size={upload_batch_size})...")
 
         for i in range(0, len(points), upload_batch_size):
             batch = points[i:i + upload_batch_size]
+            batch_num = i // upload_batch_size + 1
+            total_batches = (len(points) + upload_batch_size - 1) // upload_batch_size
+
             self.client.upsert(
                 collection_name=self.collection_name,
-                points=batch
+                points=batch,
+                wait=True
             )
 
-            if (i + upload_batch_size) % (upload_batch_size * 5) == 0:
-                print(f"  Progress: {min(i + upload_batch_size, len(points))}/{len(points)}")
+            print(f"  - 배치 {batch_num}/{total_batches} 업로드 완료 ({len(batch)}개)")
 
-        print(f"✓ Uploaded {len(points)} points to {self.collection_name}")
+        print(f"✓ {self.collection_name}에 {len(points)}개 point 업로드 완료")
         return len(points)
 
     def get_collection_info(self) -> Dict:
-        """Get collection information."""
+        """컬렉션 정보 조회"""
         try:
             info = self.client.get_collection(self.collection_name)
             return {
