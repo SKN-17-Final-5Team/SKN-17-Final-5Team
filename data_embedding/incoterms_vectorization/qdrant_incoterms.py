@@ -1,4 +1,3 @@
-import json
 import numpy as np
 import os
 
@@ -42,20 +41,44 @@ def load_document(path: str) -> str:
 # 2. 토큰 기반 청킹
 # =========================
 
-def chunk_by_tokens(text: str, max_tokens: int):
+def chunk_by_tokens(text: str, max_tokens: int, overlap_ratio: float = 0.15):
     tokens = tokenizer.encode(text)
-    chunks = []
+    n = len(tokens)
 
-    for i in range(0, len(tokens), max_tokens):
-        chunk_tokens = tokens[i : i + max_tokens]
-        chunk_text = tokenizer.decode(chunk_tokens)
+    # 1) 토큰 → 원문 char offset 계산
+    offsets = [0]
+    cur_text = ""
+    for tok in tokens:
+        cur_text += tokenizer.decode([tok])
+        offsets.append(len(cur_text))
+
+    # 2) Overlap 계산
+    overlap = int(max_tokens * overlap_ratio)
+    step = max_tokens - overlap
+
+    chunks = []
+    chunk_idx = 0
+    i = 0
+
+    while i < n:
+        j = min(i + max_tokens, n)
+
+        start_char = offsets[i]
+        end_char = offsets[j]
+        chunk_text = text[start_char:end_char]
 
         chunks.append({
-            "id": f"tok_{max_tokens}_{i}",  
-            "text": chunk_text,             
+            "id": f"tok_{max_tokens}_{chunk_idx}",
+            "text": chunk_text,
+            "start": start_char,
+            "end": end_char,
         })
 
-    print(f"토큰 청킹 완료: max_tokens={max_tokens}, chunks={len(chunks)}")
+        # 3) 다음 chunk 시작 위치 (Overlapping)
+        i += step
+        chunk_idx += 1
+
+    print(f"토큰 청킹 완료: max_tokens={max_tokens}, overlap={overlap}, chunks={len(chunks)}\n")
     return chunks
 
 
@@ -81,13 +104,13 @@ def get_embeddings(texts: List[str]) -> np.ndarray:
 def create_collection_for_chunks(client: QdrantClient, collection_name: str, vector_size: int):
     # 1) 존재 여부 확인
     try:
-        info = client.get_collection(collection_name)
+        client.get_collection(collection_name)
         print(f"이미 존재하는 컬렉션 사용: {collection_name}")
         return
     except Exception:
         print(f"컬렉션 없음 → 새로 생성: {collection_name}")
 
-    # 2) 새 컬렉션 생성
+    # 2) 컬렉션 생성
     client.create_collection(
         collection_name=collection_name,
         vectors_config=VectorParams(
@@ -107,11 +130,17 @@ def upload_chunks_to_qdrant(client: QdrantClient, collection_name: str, chunks):
 
     points = []
     for idx, (vec, ch) in enumerate(zip(embeddings, chunks)):
+        payload = {
+            "id": ch["id"],
+            "text": ch["text"],
+            "data_source": 'Incoterms'   
+        }
+
         points.append(
             PointStruct(
-                id=idx,              
-                vector=vec.tolist(), 
-                payload=ch,         
+                id=idx,
+                vector=vec.tolist(),
+                payload=payload,
             )
         )
 
@@ -122,6 +151,7 @@ def upload_chunks_to_qdrant(client: QdrantClient, collection_name: str, chunks):
     print(f"[QDRANT] 업서트 완료: {len(points)}개 포인트")
 
 
+
 # =========================
 # 5. main
 # =========================
@@ -130,13 +160,13 @@ def main():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     DOCUMENT_PATH = os.path.join(BASE_DIR, "used_data", "Incoterms_preprocessed(1).md")
     COLLECTION_NAME = "trade_collection"
-    MAX_TOKENS = 2048
+    MAX_TOKENS = 128
 
     # (1) 문서 로드
     text = load_document(DOCUMENT_PATH)
 
     # (2) 청킹
-    chunks_tok = chunk_by_tokens(text, MAX_TOKENS)
+    chunks_tok = chunk_by_tokens(text, MAX_TOKENS, 0.15)
 
     # (3) Qdrant 연결
     print("Qdrant 연결 시도")
