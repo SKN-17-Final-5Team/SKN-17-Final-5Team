@@ -1,0 +1,20 @@
+{"query": "이 매뉴얼은 누구와 협력하여 작성되었고, 어떤 목적을 위해 마련되었다고 설명하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_001.md"]}
+{"query": "매뉴얼에서 소개하는 구성 내용 세 가지(무역사기 개념·예방전략·대응방안)를 정리해 보세요.", "gold_chunk_ids": ["chunks_by_h1/chunk_001.md"]}
+{"query": "KOTRA 해외무역관에 접수된 무역사기 건수는 2020년부터 2024년까지 각각 몇 건이었나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "이 매뉴얼에서 정의하는 무역사기의 의미와, 그 안에 포함되는 대표적인 유형들을 모두 써보세요.", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "무역사기의 가장 기본적인 특징은 무엇이며, 왜 단순 오해나 실수와 구분된다고 설명하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "무역사기 발생 배경에서 경제적·사회적·기술적 요인이 각각 어떤 방식으로 사기를 유발한다고 설명하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "결제사기 유형 대표 사례 중 2024년 8월 국내기업 A사가 겪은 상황과, 어떻게 피해를 예방할 수 있었는지 요약해 보세요.", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "선적불량 유형 대표 사례 중 2024년 1월 미국 A사와의 거래에서 어떤 문제가 발생했고, 이후 어떤 절차가 진행되었나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "금품사기 유형 대표 사례에서 2024년 2월 말레이시아 바이어가 요청한 비용과 금액, 그리고 이 사건의 결말을 정리해 보세요.", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "금품사기 유형 대표 사례에서 2024년 6월 코트디부아르 제약회사 U사를 명목으로 한 사건에서 어떤 명목의 비용이 요구되었고, 무역관 확인 결과 어떤 점이 사기 정황으로 밝혀졌나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "이메일사기 유형에서 해커들이 어떤 방식으로 기업 간 이메일을 악용하며, 왜 스피어피싱의 한 종류라고 설명하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "이메일사기 유형 대표 사례1(시드니 O사와 국내기업 Y사 거래)에서 어떤 계좌로 대금이 송금되었고, 어떻게 사기 사실을 알게 되었나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "〈이메일 해킹을 통한 무역대금 송금 사기 주의〉에서 포르투갈 계좌를 이용한 사기의 특징과, 피해 발생 시 가장 먼저 취해야 할 조치는 무엇이라고 안내하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "이메일사기 예방을 위해 매뉴얼이 제시하는 결제계좌 관련 핵심 예방조치 두 가지를 설명해 보세요.", "gold_chunk_ids": ["chunks_by_h1/chunk_002.md"]}
+{"query": "결제사기·선적불량 예방을 위해 거래 전 거래처의 실존 여부와 신용도를 어떻게 확인하라고 매뉴얼은 권고하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_003.md"]}
+{"query": "금품사기 예방 항목에서 계약 과정 중 어떤 비용 요구 상황을 특히 의심해 보라고 설명하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_003.md"]}
+{"query": "한국무역보험공사의 국외기업 신용조사 서비스에서 중소·중견기업을 기준으로 요약 보고서와 Full Report 수수료는 각각 어떻게 제시되나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_003.md"]}
+{"query": "단기수출보험(선적 후) 제도는 어떤 거래를 대상으로 하고, 어떤 위험에 대해 어떤 부보율로 보장한다고 설명하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_003.md"]}
+{"query": "단기수출보험-중소중견 Plus+ 상품에서 중소기업의 대상 거래 조건, 보상비율, 담보위험은 어떻게 규정되어 있나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_003.md"]}
+{"query": "국가별 사업자 등록번호 조회 사이트 활용 부분에서 미국과 중국 기업 정보를 확인할 때 어떤 웹사이트를 활용하라고 안내하나요?", "gold_chunk_ids": ["chunks_by_h1/chunk_003.md"]}
