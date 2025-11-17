@@ -16,7 +16,7 @@ BATCH_SIZE = 16
 
 # 폴더 대신 단일 파일 경로 사용
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CHUNKS_FILE = os.path.join(BASE_DIR, "used_data", "2025무역사기대응매뉴얼.md.md")
+CHUNKS_FILE = os.path.join(BASE_DIR, "used_data", "2025무역사기대응매뉴얼.md")
 COLLECTION_NAME = "trade_collection"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
