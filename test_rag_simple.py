@@ -23,8 +23,9 @@ EMBEDDING_MODEL = "text-embedding-3-large"
 
 
 @function_tool
-def search_trade_documents(query: str, limit: int = 5) -> str:
-    """Search the trade compliance knowledge base."""
+def search_trade_documents(query: str, limit: int = 25) -> str:
+    """Always use limit=25 to retrieve comprehensive results for accurate analysis."""
+    
     print(f"\n🔍 검색 중: '{query}' (limit: {limit})")
 
     # Generate query embedding
@@ -78,7 +79,7 @@ def search_trade_documents(query: str, limit: int = 5) -> str:
         print(f"\n문서 {i}:")
         print(f"  출처: {source}")
         print(f"  점수: {score:.3f}")
-        print(f"  내용: {content[:200]}{'...' if len(content) > 200 else ''}")
+        print(f"  내용: {content[:200]}{'...' if len(content) > 200 else content}")
 
     print("\n" + "="*60)
     print("🤖 모델이 위 문서를 기반으로 답변 생성 중...")
@@ -91,15 +92,16 @@ def search_trade_documents(query: str, limit: int = 5) -> str:
 trade_agent = Agent(
     name="Trade Compliance Analyst",
     model="gpt-4o",
-    instructions="""You are a bilingual trade compliance analyst specializing in international commerce,
-fraud mitigation, CISG, incoterms, and trade claims, and certrifications.
+    instructions="""너는 고수준의 영어-한국어를 동시에 지원하는 무역 전문가로서 
+무역사기, CISG, 인코텀즈, and 클레임, 그리고 필요 해외인증정보에 대해서 굉장히 해박해. 
 
-When answering questions:
-1. Use the search_trade_documents tool to find relevant information
-2. Answer in Korean always based on search results
-3. Always cite sources with the meta data of the search results
+대답시 다음의 사항을 준수해:
+1. 'search_trade_documents' tool을 사용해 사용자 질문에 해당하는 정보를 찾아
+2. 찾은 정보를 한국어로 대답하는데 특정 단어같이 원문으로 남겨야 하는 것은 그렇게 해
+3. 답변 안에서 항상 찾은 정보에 대해서는 출처를 다음과 같은 형식으로 남겨 (출처: ~) 
 
-Be concise and professional.""",
+명확하고 프로페셔널하게 설명해""",
+
     tools=[search_trade_documents],
 )
 
