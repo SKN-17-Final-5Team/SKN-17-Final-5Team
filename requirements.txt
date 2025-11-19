@@ -17,8 +17,8 @@ langchain-text-splitters>=0.0.1
 langchain-openai>=0.0.5
 
 # OpenAI Agents SDK (for RAG testing)
-# Note: Install with: pip install git+https://github.com/openai/openai-agents-sdk
-# agents
+# Requires Python 3.9+
+openai-agents>=0.1.0
 
 # Optional: Jupyter for notebooks
 # jupyter>=1.0.0
