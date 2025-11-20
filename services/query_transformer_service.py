@@ -1,9 +1,9 @@
 """
-Query Transformer 서비스
+사용자 쿼리 변환 서비스
 
-사용자 쿼리를 무역 문서 검색에 최적화된 형태로 변환
-- Rewriting: 검색에 적합한 용어로 개선
-- Decomposition: 복합 질문을 개별 서브쿼리로 분해
+LLM을 사용해서 검색 쿼리를 개선하고, 복합 질문이면 분해
+- "무역 사기 어떻게 막아?" → "무역 사기 예방 및 대응 방법" (더 검색 잘됨)
+- "수출이랑 수입 차이" → 2개로 분해 ["수출 절차", "수입 절차"]
 """
 
 import json
@@ -13,7 +13,7 @@ from config import openai_client
 from models.query_transformer import QueryTransformResult
 
 
-# LLM 프롬프트 상수
+# LLM 프롬프트
 QUERY_TRANSFORM_PROMPT = """당신은 무역 문서 검색 시스템의 쿼리 최적화 전문가입니다.
 
 사용자의 질문을 분석하여 다음 두 가지 작업을 수행하세요:
@@ -86,48 +86,41 @@ async def rewrite_and_decompose_query(
     model: str = "gpt-4o-mini"
 ) -> QueryTransformResult:
     """
-    사용자 쿼리를 리라이팅하고 필요시 디컴포지션 수행
+    사용자 쿼리를 검색에 최적화된 형태로 변환
+
+    LLM에게 프롬프트 던져서:
+    1. 검색에 더 잘 걸리는 용어로 개선
+    2. 복합 질문이면 개별 서브쿼리로 분해 (아니면 그냥 None)
 
     Args:
-        query: 원본 사용자 질문
-        model: 사용할 LLM 모델 (기본값: gpt-4o-mini, 빠르고 저렴)
+        query: 사용자가 입력한 원본 질문
+        model: 사용할 LLM 모델 (기본값: gpt-4o-mini)
 
     Returns:
-        QueryTransformResult: 변환된 쿼리 결과
-            - rewritten_query: 개선된 단일 쿼리
-            - sub_queries: 서브쿼리 리스트 (복합 질문인 경우) 또는 None
-            - reasoning: 변환 근거 (선택사항)
-
-    Raises:
-        Exception: LLM 호출 실패 또는 JSON 파싱 실패 시
+        QueryTransformResult 객체
+            - rewritten_query: 개선된 쿼리
+            - sub_queries: 서브쿼리 리스트 or None
+            - reasoning: LLM이 설명한 변환 근거 (디버깅용)
     """
     print(f"\n🔄 쿼리 변환 중: '{query}'")
 
     try:
-        # LLM 호출 (JSON 모드 사용)
+        # LLM 호출해서 쿼리 변환 (JSON 응답 강제)
         response = openai_client.chat.completions.create(
             model=model,
             messages=[
-                {
-                    "role": "system",
-                    "content": QUERY_TRANSFORM_PROMPT
-                },
-                {
-                    "role": "user",
-                    "content": query
-                }
+                {"role": "system", "content": QUERY_TRANSFORM_PROMPT},
+                {"role": "user", "content": query}
             ],
-            response_format={"type": "json_object"},  # JSON 응답 강제
-            temperature=0.3  # 일관성 있는 결과를 위해 낮은 temperature
+            response_format={"type": "json_object"},
+            temperature=0.3  # 낮게 설정 → 매번 비슷한 결과 나옴 (일관성)
         )
 
-        # JSON 파싱
+        # JSON 파싱 후 Pydantic 모델로 변환
         result_json = json.loads(response.choices[0].message.content)
-
-        # Pydantic 모델로 변환
         result = QueryTransformResult(**result_json)
 
-        # 로그 출력
+        # 결과 로그 출력
         print(f"✓ 개선된 쿼리: '{result.rewritten_query}'")
         if result.sub_queries and len(result.sub_queries) > 0:
             print(f"✓ 복합 질문 감지 → {len(result.sub_queries)}개 서브쿼리로 분해:")
@@ -139,14 +132,13 @@ async def rewrite_and_decompose_query(
         if result.reasoning:
             print(f"  (근거: {result.reasoning})")
 
-        print()  # 빈 줄
-
+        print()
         return result
 
     except json.JSONDecodeError as e:
+        # LLM이 이상한 응답 보낸 경우 (거의 없음)
         print(f"⚠️ JSON 파싱 실패: {e}")
         print(f"⚠️ 원본 쿼리를 그대로 사용합니다.\n")
-        # Fallback: 원본 쿼리 그대로 반환
         return QueryTransformResult(
             rewritten_query=query,
             sub_queries=None,
@@ -154,9 +146,9 @@ async def rewrite_and_decompose_query(
         )
 
     except Exception as e:
+        # 기타 예외 (API 오류 등)
         print(f"⚠️ 쿼리 변환 실패: {e}")
         print(f"⚠️ 원본 쿼리를 그대로 사용합니다.\n")
-        # Fallback: 원본 쿼리 그대로 반환
         return QueryTransformResult(
             rewritten_query=query,
             sub_queries=None,
