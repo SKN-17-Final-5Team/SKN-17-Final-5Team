@@ -10,13 +10,13 @@ from qdrant_client.models import PointStruct, VectorParams, Distance, Filter, Fi
 load_dotenv()
 
 EMBED_MODEL = 'text-embedding-3-large'
-MAX_TOKENS = 2048     # 청크 하나당 최대 토큰 수
-OVERLAP = 100         # 청크 간 토큰 겹침
+MAX_TOKENS = 512     # 청크 하나당 최대 토큰 수
+OVERLAP = 77         # 청크 간 토큰 겹침
 BATCH_SIZE = 16
 
 # 단일 파일 경로 사용
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CHUNKS_FILE = os.path.join(BASE_DIR, "used_data", "2025무역사기대응매뉴얼.md")
+CHUNKS_FILE = os.path.join(BASE_DIR, "used_data", "2025무역사기예방및대응매뉴얼.md")
 COLLECTION_NAME = "trade_collection"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
