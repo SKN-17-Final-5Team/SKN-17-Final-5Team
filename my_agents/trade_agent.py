@@ -37,3 +37,5 @@ trade_agent = Agent(
     instructions=load_instructions(),  # 외부 파일에서 로드
     tools=[search_trade_documents],
 )
+
+
