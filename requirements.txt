@@ -20,6 +20,9 @@ langchain-openai>=0.0.5
 # Requires Python 3.9+
 openai-agents>=0.1.0
 
+# Web search
+tavily-python>=0.7.12
+
 # Optional: Jupyter for notebooks
 # jupyter>=1.0.0
 # ipykernel>=6.0.0

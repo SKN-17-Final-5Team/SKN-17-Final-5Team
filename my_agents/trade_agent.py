@@ -7,6 +7,7 @@
 import os
 from agents import Agent
 from tools.search_tool import search_trade_documents
+from tools.web_search_tool import search_web
 
 
 def load_instructions(filename: str = "trade_instructions.txt") -> str:
@@ -35,7 +36,7 @@ trade_agent = Agent(
     name="Trade Compliance Analyst",
     model="gpt-4o",
     instructions=load_instructions(),  # 외부 파일에서 로드
-    tools=[search_trade_documents],
+    tools=[search_trade_documents, search_web],
 )
 
 
