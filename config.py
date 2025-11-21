@@ -30,7 +30,7 @@ openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # 설정 상수
 # =====================================================================
 
-COLLECTION_NAME = "trade_collection"  # Qdrant 컬렉션 이름
+COLLECTION_NAME = "trade_collection_test"  # Qdrant 컬렉션 이름
 EMBEDDING_MODEL = "text-embedding-3-large"  # OpenAI Embedding 모델
 RERANKER_API_URL = os.getenv("RERANKER_API_URL", "http://your-runpod-server/rerank")  # Reranker API 엔드포인트
 
