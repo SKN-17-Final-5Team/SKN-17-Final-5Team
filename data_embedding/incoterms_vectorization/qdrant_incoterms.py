@@ -240,7 +240,7 @@ def main(update_existing: bool = False):
                         False면 기존 데이터에 추가 (중복 가능)
     """
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DOCUMENT_PATH = os.path.join(BASE_DIR, "used_data", "Incoterms_preprocessed(1).md")
+    DOCUMENT_PATH = os.path.join(BASE_DIR, "used_data", "Incoterms_preprocessed2.md")
     COLLECTION_NAME = "trade_collection"
     MAX_TOKENS = 128
 

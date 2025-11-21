@@ -17,7 +17,8 @@ from config import (
     openai_client,
     COLLECTION_NAME,
     EMBEDDING_MODEL,
-    USE_RERANKER
+    USE_RERANKER,
+    USE_PER_QUERY_RERANK
 )
 from utils import print_retrieved_documents
 from services.reranker_service import call_reranker_api
@@ -25,7 +26,7 @@ from services.query_transformer_service import rewrite_and_decompose_query
 
 
 @function_tool
-async def search_trade_documents(query: str, limit: int = 25, top_k: int = 5) -> str:
+async def search_trade_documents(query: str, limit: int = 25, top_k: int = 10) -> str:
     """
     무역 문서 검색 메인 함수
 
@@ -42,96 +43,99 @@ async def search_trade_documents(query: str, limit: int = 25, top_k: int = 5) ->
     print(f"\n🔍 검색 시작: '{query}' (초기 검색: {limit}개, 최종 선정: {top_k}개)")
 
     # 쿼리 개선 + 필요하면 복합 질문 분해
-    # 예: "수출 수입 차이" → rewritten_query + sub_queries 2개
     transform = await rewrite_and_decompose_query(query)
     rewritten_query = transform.rewritten_query
-    sub_queries = transform.sub_queries
+    sub_queries = transform.sub_queries or [rewritten_query]  # None이면 단일 쿼리로 변환
 
-    # 단순 질문이면 그냥 검색, 복합 질문이면 병렬로 여러 개 검색
-    if not sub_queries or len(sub_queries) == 0:
-        points = await _single_search(rewritten_query, limit)
-    else:
-        # 여러 서브쿼리를 동시에 검색 → 중복 제거 → 병합
-        points = await _multi_search(sub_queries, limit)
+    # ===== 통합 검색 (단순/복합 질문 모두 동일한 경로 사용) =====
+    grouped_points = await _multi_search(sub_queries, limit)
+    total_docs = sum(len(pts) for pts in grouped_points.values())
+    print(f"✓ 최종 {total_docs}개 문서 수집 ({len(sub_queries)}개 그룹)\n")
 
-    print(f"✓ 최종 {len(points)}개 문서 수집\n")
-
-    if not points:
+    if not grouped_points or all(len(pts) == 0 for pts in grouped_points.values()):
         print("⚠️  검색 결과가 없습니다.\n")
         return "검색 결과가 없습니다."
 
-    # 디버깅용: 검색된 문서 출력 (콘솔에만 표시, Agent에게는 안 보냄)
-    print_retrieved_documents(points, n=25)
+    # 디버깅용 출력
+    all_points_for_debug = []
+    for pts in grouped_points.values():
+        all_points_for_debug.extend(pts)
+    print_retrieved_documents(all_points_for_debug, n=25)
 
-    # Reranker에 전달할 텍스트 추출
-    documents_for_rerank = [
-        point.payload.get("text") or point.payload.get("content") or ""
-        for point in points
-    ]
+    # ----- 개별 Rerank vs 통합 Rerank 선택 -----
+    if USE_RERANKER and USE_PER_QUERY_RERANK:
+        # 개별 Rerank: 각 서브 쿼리별로 rerank
+        reranked_results = await _rerank_per_query(grouped_points, sub_queries, top_k)
 
-    # Reranker로 재정렬 (설정에서 켜놨으면)
-    rerank_response = None
+        if not reranked_results:
+            print("⚠️  Rerank 결과가 없습니다.\n")
+            return "검색 결과가 없습니다."
 
-    if USE_RERANKER:
-        try:
-            # rewritten_query로 rerank (원본 query보다 더 정확함)
-            rerank_response = await call_reranker_api(rewritten_query, documents_for_rerank, top_k=top_k)
-        except Exception as e:
-            print(f"⚠️  Reranker 실패: {e}")
-            print(f"⚠️  기본 검색 결과의 상위 {top_k}개를 사용합니다.\n")
-            rerank_response = None
-    else:
-        print(f"ℹ️  Reranker 미사용 - 기본 검색 결과 상위 {top_k}개 사용\n")
-
-    # Agent에게 전달할 최종 문서 포맷팅
-    if rerank_response:
+        # 결과 포맷팅 (개별 rerank 결과)
         print("="*60)
-        print(f"🎯 Reranker로 선정된 최종 {len(rerank_response.results)}개 문서 (모델에게 전달)")
+        print(f"🎯 개별 Rerank로 선정된 최종 {len(reranked_results)}개 문서 (모델에게 전달)")
         print("="*60)
 
         formatted = []
-        for rank, result in enumerate(rerank_response.results, 1):
-            original_point = points[result.index]
-            content = original_point.payload.get("text") or original_point.payload.get("content") or ""
+        for rank, (point, rerank_score, sub_query) in enumerate(reranked_results, 1):
+            content = point.payload.get("text") or point.payload.get("content") or ""
             if content:
-                content = content[:500]  # 너무 길면 잘라냄
-            source_tag = original_point.payload.get("data_source", "unknown")
-            rerank_score = result.score
+                content = content[:500]
+            source_tag = point.payload.get("data_source", "unknown")
 
-            # Agent에게 전달할 텍스트 (간결하게)
-            doc_text = f"[{rank}] {content}\n   출처: {source_tag}, Rerank 점수: {rerank_score:.3f}"
+            # Agent에게 전달할 텍스트
+            doc_text = f"[{rank}] {content}\n   출처: {source_tag}, Rerank 점수: {rerank_score:.3f}, 서브쿼리: '{sub_query}'"
             formatted.append(doc_text)
 
-            # 콘솔에만 추가 정보 출력 (개발자 디버깅용)
-            debug_doc_name = original_point.payload.get("document_name") or original_point.payload.get("file_name")
-            debug_article = original_point.payload.get("article")
+            # 콘솔 디버깅 출력
+            debug_doc_name = point.payload.get("document_name") or point.payload.get("file_name")
+            debug_article = point.payload.get("article")
 
             print(f"\n문서 {rank}:")
+            print(f"  서브쿼리: '{sub_query}'")
             print(f"  출처: {source_tag}")
             if debug_doc_name:
                 print(f"  파일명: {debug_doc_name}")
             if debug_article:
                 print(f"  조문: {debug_article}")
-            print(f"  원본 인덱스: {result.index + 1}")
             print(f"  Rerank 점수: {rerank_score:.3f}")
             print(f"  내용: {content[:200]}{'...' if len(content) > 200 else ''}")
 
     else:
-        # Reranker 실패했거나 꺼져있으면 기본 검색 결과 사용
-        print("="*60)
-        print(f"📄 기본 검색 결과 상위 {top_k}개 (모델에게 전달)")
-        print("="*60)
+        # 통합 Rerank 또는 Reranker 미사용
 
-        formatted = []
-        for i, point in enumerate(points[:top_k], 1):
-            content = point.payload.get("text") or point.payload.get("content") or ""
-            if content:
-                content = content[:500]
-            score = point.score
-            source_tag = point.payload.get("data_source", "unknown")
+        # 모든 그룹의 문서를 병합
+        seen_ids = {}
+        for pts in grouped_points.values():
+            for point in pts:
+                if point.id not in seen_ids or point.score > seen_ids[point.id].score:
+                    seen_ids[point.id] = point
 
-            doc_text = f"[{i}] {content}\n   출처: {source_tag}, 점수: {score:.3f}"
-            formatted.append(doc_text)
+        all_points = sorted(seen_ids.values(), key=lambda p: p.score, reverse=True)
+
+        rerank_response = None
+        if USE_RERANKER:
+            # 통합 Rerank 방식
+            num_queries = len(sub_queries)
+            rerank_msg = f"ℹ️  통합 Rerank 방식 사용 ({num_queries}개 쿼리 병합)\n"
+            print(rerank_msg)
+
+            documents_for_rerank = [
+                point.payload.get("text") or point.payload.get("content") or ""
+                for point in all_points
+            ]
+
+            try:
+                rerank_response = await call_reranker_api(rewritten_query, documents_for_rerank, top_k=top_k)
+            except Exception as e:
+                print(f"⚠️  Reranker 실패: {e}")
+                print(f"⚠️  기본 검색 결과의 상위 {top_k}개를 사용합니다.\n")
+        else:
+            # Reranker 미사용
+            print(f"ℹ️  Reranker 미사용 - 기본 검색 결과 상위 {top_k}개 사용\n")
+
+        # 결과 포맷팅
+        formatted = _format_rerank_results(all_points, rerank_response, top_k)
 
     print("\n" + "=" * 60)
     print("🤖 모델이 위 문서를 기반으로 답변 생성 중...")
@@ -142,42 +146,21 @@ async def search_trade_documents(query: str, limit: int = 25, top_k: int = 5) ->
 
 # ===== 내부 헬퍼 함수 =====
 
-async def _single_search(query: str, limit: int) -> List:
+async def _multi_search(sub_queries: List[str], limit: int) -> dict:
     """
-    일반적인 단일 쿼리 검색 (복합 질문 아닐 때)
-    쿼리 → Embedding → Qdrant 검색 → 결과 반환
-    """
-    print(f"📌 단일 검색 수행: '{query}'")
+    병렬 검색 (단일/복합 질문 모두 처리)
 
-    # 쿼리를 벡터로 변환
-    response = openai_client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=query
-    )
-    query_vector = response.data[0].embedding
+    예1 (단일): ["수출 절차"] 1개 검색
+    예2 (복합): ["수출 절차", "수입 절차"] 2개를 동시에 검색 → 서브 쿼리별 그룹화
 
-    # Qdrant에서 유사 문서 검색
-    search_result = qdrant_client.query_points(
-        collection_name=COLLECTION_NAME,
-        query=query_vector,
-        limit=limit,
-        with_payload=True
-    )
-
-    points = search_result.points if hasattr(search_result, 'points') else []
-    print(f"   → {len(points)}개 문서 발견")
-
-    return points
-
-
-async def _multi_search(sub_queries: List[str], limit: int) -> List:
-    """
-    복합 질문 처리용 병렬 검색
-
-    예: ["수출 절차", "수입 절차"] 2개를 동시에 검색 → 중복 제거 → 병합
     순차 검색보다 2~3배 빠름 (asyncio.gather 덕분)
+
+    Returns:
+        Dict[str, List]: {서브쿼리: 검색결과Points} 형태의 딕셔너리
     """
-    print(f"📌 멀티 검색 수행 ({len(sub_queries)}개 서브쿼리)")
+    num_queries = len(sub_queries)
+    query_type = "단일 쿼리" if num_queries == 1 else f"{num_queries}개 서브쿼리"
+    print(f"📌 검색 수행 ({query_type})")
 
     # 1) 모든 서브쿼리를 동시에 벡터로 변환 (병렬 처리)
     print("   Step 1: Embedding 생성 중...")
@@ -205,31 +188,147 @@ async def _multi_search(sub_queries: List[str], limit: int) -> List:
     ]
     search_results = await asyncio.gather(*search_tasks)
 
-    # 3) 각 서브쿼리별 검색 결과 확인
-    for i, (sq, result) in enumerate(zip(sub_queries, search_results), 1):
-        points_count = len(result.points) if hasattr(result, 'points') else 0
-        print(f"   서브쿼리 {i}: '{sq}' → {points_count}개")
+    # 3) 서브 쿼리별로 그룹화
+    print("   Step 3: 서브 쿼리별 그룹화 중...")
+    grouped_points = {}
 
-    # 4) 중복 문서 제거 (같은 문서가 여러 서브쿼리에서 나올 수 있음)
-    print("   Step 4: 중복 제거 및 병합 중...")
-    seen_ids = {}
-
-    for result in search_results:
+    for sq, result in zip(sub_queries, search_results):
         points = result.points if hasattr(result, 'points') else []
+
+        # 각 그룹 내 중복 제거 (같은 서브쿼리 내에서만)
+        seen_ids = {}
         for point in points:
             point_id = point.id
-            # 같은 문서면 점수가 더 높은 쪽으로 보존
             if point_id not in seen_ids or point.score > seen_ids[point_id].score:
                 seen_ids[point_id] = point
 
-    # 5) 점수 높은 순으로 정렬
-    merged_points = sorted(seen_ids.values(), key=lambda p: p.score, reverse=True)
+        # 점수 높은 순으로 정렬
+        unique_points = sorted(seen_ids.values(), key=lambda p: p.score, reverse=True)
+        grouped_points[sq] = unique_points
 
-    total_before = sum(
-        len(result.points) if hasattr(result, 'points') else 0
-        for result in search_results
-    )
-    print(f"   → 중복 제거 전: {total_before}개, 후: {len(merged_points)}개")
+        print(f"   서브쿼리: '{sq}' → {len(unique_points)}개")
 
-    # Reranker가 다시 골라낼거니까 넉넉히 전달 (limit의 2배)
-    return merged_points[:limit * 2]
+    return grouped_points
+
+
+def _format_rerank_results(points: List, rerank_response, top_k: int) -> List[str]:
+    """
+    Rerank 결과를 Agent에게 전달할 형식으로 포맷팅
+
+    Args:
+        points: 검색된 문서 Points 리스트
+        rerank_response: Reranker API 응답 (None이면 기본 검색 결과 사용)
+        top_k: 반환할 문서 개수
+
+    Returns:
+        List[str]: 포맷팅된 문서 텍스트 리스트
+    """
+    formatted = []
+
+    if rerank_response:
+        # Reranker 결과 사용
+        print("="*60)
+        print(f"🎯 Reranker로 선정된 최종 {len(rerank_response.results)}개 문서 (모델에게 전달)")
+        print("="*60)
+
+        for rank, result in enumerate(rerank_response.results, 1):
+            original_point = points[result.index]
+            content = original_point.payload.get("text") or original_point.payload.get("content") or ""
+            if content:
+                content = content[:500]  # 너무 길면 잘라냄
+            source_tag = original_point.payload.get("data_source", "unknown")
+            rerank_score = result.score
+
+            # Agent에게 전달할 텍스트
+            doc_text = f"[{rank}] {content}\n   출처: {source_tag}, Rerank 점수: {rerank_score:.3f}"
+            formatted.append(doc_text)
+
+            # 콘솔 디버깅 출력
+            debug_doc_name = original_point.payload.get("document_name") or original_point.payload.get("file_name")
+            debug_article = original_point.payload.get("article")
+
+            print(f"\n문서 {rank}:")
+            print(f"  출처: {source_tag}")
+            if debug_doc_name:
+                print(f"  파일명: {debug_doc_name}")
+            if debug_article:
+                print(f"  조문: {debug_article}")
+            print(f"  원본 인덱스: {result.index + 1}")
+            print(f"  Rerank 점수: {rerank_score:.3f}")
+            print(f"  내용: {content[:200]}{'...' if len(content) > 200 else ''}")
+
+    else:
+        # 기본 검색 결과 사용
+        print("="*60)
+        print(f"📄 기본 검색 결과 상위 {top_k}개 (모델에게 전달)")
+        print("="*60)
+
+        for i, point in enumerate(points[:top_k], 1):
+            content = point.payload.get("text") or point.payload.get("content") or ""
+            if content:
+                content = content[:500]
+            score = point.score
+            source_tag = point.payload.get("data_source", "unknown")
+
+            doc_text = f"[{i}] {content}\n   출처: {source_tag}, 점수: {score:.3f}"
+            formatted.append(doc_text)
+
+    return formatted
+
+
+async def _rerank_per_query(grouped_points: dict, sub_queries: List[str], total_topk: int) -> List:
+    """
+    각 서브 쿼리별로 개별 reranking 수행
+
+    Args:
+        grouped_points: 서브 쿼리별로 그룹화된 검색 결과 {sub_query: [Points]}
+        sub_queries: 서브 쿼리 리스트
+        total_topk: 최종 반환할 총 문서 개수
+
+    Returns:
+        List[tuple]: [(Point, rerank_score, sub_query), ...] 형태의 리스트
+    """
+    # Top-k를 서브 쿼리 개수로 균등 배분 (최소 1개)
+    per_query_k = max(1, total_topk // len(sub_queries))
+
+    print(f"\n🎯 개별 Rerank 수행: {len(sub_queries)}개 서브 쿼리")
+    print(f"   각 서브 쿼리당 {per_query_k}개 선정 (총 약 {per_query_k * len(sub_queries)}개)")
+
+    all_reranked = []
+
+    for i, sq in enumerate(sub_queries, 1):
+        points = grouped_points.get(sq, [])
+        if not points:
+            print(f"\n   [{i}/{len(sub_queries)}] '{sq}' → 검색 결과 없음, 건너뜀")
+            continue
+
+        print(f"\n   [{i}/{len(sub_queries)}] '{sq}'")
+        print(f"      검색 결과: {len(points)}개 → Rerank → top {per_query_k}")
+
+        # 문서 텍스트 추출
+        documents = [
+            point.payload.get("text") or point.payload.get("content") or ""
+            for point in points
+        ]
+
+        # 개별 rerank 수행
+        try:
+            rerank_response = await call_reranker_api(sq, documents, top_k=per_query_k)
+
+            # 결과 저장 (원본 Point, rerank 점수, 서브 쿼리)
+            for result in rerank_response.results:
+                original_point = points[result.index]
+                all_reranked.append((original_point, result.score, sq))
+
+            print(f"      ✓ Rerank 완료: {len(rerank_response.results)}개 선정")
+
+        except Exception as e:
+            print(f"      ⚠️ Rerank 실패: {e}")
+            print(f"      → 기본 검색 점수 기준 상위 {per_query_k}개 사용")
+            # 실패 시 검색 점수 기준 상위 per_query_k개 사용
+            for point in points[:per_query_k]:
+                all_reranked.append((point, point.score, sq))
+
+    print(f"\n✓ 개별 Rerank 완료: 총 {len(all_reranked)}개 문서 선정\n")
+
+    return all_reranked

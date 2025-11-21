@@ -31,7 +31,17 @@ async def main():
         print("✓ Reranker 미사용 모드로 실행합니다.\n")
     else:
         config.USE_RERANKER = True
-        print("✓ Reranker 사용 모드로 실행합니다.\n")
+        print("✓ Reranker 사용 모드로 실행합니다.")
+
+        # Reranker 사용 시 개별 Rerank 방식 선택
+        per_query_choice = input("복합 질문 시 개별 Rerank를 사용하시겠습니까? (y/n, 기본값: y): ").strip().lower()
+
+        if per_query_choice in ['n', 'no']:
+            config.USE_PER_QUERY_RERANK = False
+            print("✓ 통합 Rerank 방식으로 실행합니다.\n")
+        else:
+            config.USE_PER_QUERY_RERANK = True
+            print("✓ 개별 Rerank 방식으로 실행합니다. (모든 토픽 균형 보장)\n")
 
     # 사용자 질문 입력 (기본값: "무역 사기를 방지하는 방법은?")
     question = input("질문: ").strip() or "무역 사기를 방지하는 방법은?"
