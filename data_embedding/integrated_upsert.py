@@ -48,27 +48,33 @@ DOCS_TOKEN = [
     {
         "doc_id": "incoterms",
         "path": "data/Incoterms_preprocessed.md",
-        "max_tokens": 128,
+        "max_tokens": 1024,
         "overlap": 0.15,
     },
     {
         "doc_id": "fraud",
         "path": "data/2025무역사기예방및대응매뉴얼.md",
         "max_tokens": 128,
-        "overlap": 0.15,
+        "overlap": 0.2,
     },
     {
         "doc_id": "claim",
         "path": "data/무역클레임중재 50문50답(전처리).txt",
         "max_tokens": 128,
-        "overlap": 0.15,
+        "overlap": 0.1,
     },
     {
         "doc_id": "certification",
         "path": "data/certifications.jsonl",
         "max_tokens": 128,
-        "overlap": 0.15,
+        "overlap": 0.2,
     },
+    {
+        "doc_id": "CISG",
+        "path": "data/다자조약상세.txt",
+        "max_tokens": 128,
+        "overlap": 0.2,
+    }
 ]
 
 # CISG 전용 설정
