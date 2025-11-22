@@ -41,3 +41,11 @@ USE_RERANKER = True  # 기본값
 # True: 각 서브 쿼리마다 개별 rerank → 모든 토픽 균형 보장
 # False: 통합 rerank → 전체 품질 우선 (일부 토픽 누락 가능)
 USE_PER_QUERY_RERANK = True  # 기본값
+
+
+# MySQL 데이터베이스 설정
+MYSQL_HOST = os.getenv("MYSQL_HOST")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT"))
+MYSQL_USER = os.getenv("MYSQL_USER")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")

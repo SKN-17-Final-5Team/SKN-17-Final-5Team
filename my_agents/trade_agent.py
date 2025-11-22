@@ -28,8 +28,39 @@ def load_instructions(filename: str = "trade_instructions.txt") -> str:
         return f.read()
 
 
+def create_trade_agent(memory_context: str = "") -> Agent:
+    """
+    무역 전문가 Agent 생성 (메모리 컨텍스트 포함 가능)
+
+    Args:
+        memory_context: 대화 히스토리 컨텍스트 (선택)
+
+    Returns:
+        Agent 인스턴스
+    """
+    base_instructions = load_instructions()
+
+    # 메모리 컨텍스트가 있으면 추가
+    if memory_context:
+        instructions = f"""
+        [대화 히스토리]
+        {memory_context}
+
+        {base_instructions}
+        """
+    else:
+        instructions = base_instructions
+
+    return Agent(
+        name="Trade Compliance Analyst",
+        model="gpt-4o",
+        instructions=instructions,
+        tools=[search_trade_documents, search_web],
+    )
+
+
 # =====================================================================
-# Agent 정의 (무역 전문가 Agent)
+# 기본 Agent 인스턴스 (메모리 없는 버전)
 # =====================================================================
 
 trade_agent = Agent(
@@ -38,5 +69,4 @@ trade_agent = Agent(
     instructions=load_instructions(),  # 외부 파일에서 로드
     tools=[search_trade_documents, search_web],
 )
-
 
