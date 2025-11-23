@@ -17,19 +17,12 @@ cachetools>=5.3.0
 
 # Data processing
 numpy>=1.24.0
-pandas>=2.0.0
-
-# LangChain (for some vectorization scripts)
-langchain-text-splitters>=0.0.1
-langchain-openai>=0.0.5
 
 # OpenAI Agents SDK (for RAG testing)
-# Requires Python 3.9+
 openai-agents>=0.1.0
 
 # Web search
 tavily-python>=0.7.12
 
-# Optional: Jupyter for notebooks
-# jupyter>=1.0.0
-# ipykernel>=6.0.0
+# UI
+chainlit>=1.0.0

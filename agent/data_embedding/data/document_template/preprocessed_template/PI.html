@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Proforma Invoice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 60px 80px;
+            font-size: 10pt;
+            line-height: 1.3;
+        }
+
+        h1 {
+            text-align: left;
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 24pt;
+            font-weight: normal;
+            text-transform: uppercase;
+        }
+
+        .header-line {
+            border-top: 2px solid #000;
+            border-bottom: 1px solid #000;
+            height: 2px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        .section-header {
+            background-color: #d9d9d9;
+            /* Light gray background */
+            font-weight: bold;
+            padding: 5px;
+        }
+
+        .no-border-bottom {
+            border-bottom: none;
+        }
+
+        .no-border-top {
+            border-top: none;
+        }
+
+        .items-header th {
+            font-weight: normal;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .items-body td {
+            height: 200px;
+            /* Fixed height for the empty body */
+        }
+
+        .footer-section {
+            margin-top: 20px;
+        }
+
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .footer-item {
+            flex: 1;
+        }
+
+        .declaration {
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>PROFORMA INVOICE</h1>
+    <div class="header-line"></div>
+
+    <table>
+        <!-- Proforma Invoice Header -->
+        <tr>
+            <td colspan="2" class="section-header">Proforma Invoice</td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                Date: [ Date ]<br>
+                Proforma invoice #: [ Proforma Invoice No ]
+            </td>
+        </tr>
+
+        <!-- SENT BY -->
+        <tr>
+            <td colspan="2" class="section-header">SENT BY</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="height: 100px;">
+                Company Name: [ Seller Name ]<br>
+                Name/Department: [ Seller Department ]<br>
+                Address: [ Seller Address ]<br>
+                City/Postal Code: [ Seller City ]<br>
+                Country: [ Seller Country ]<br>
+                Tel./Fax No.: [ Seller Tel ]
+            </td>
+        </tr>
+
+        <!-- SENT TO & Bill of Lading No -->
+        <tr>
+            <td class="section-header" style="width: 50%;">SENT TO</td>
+            <td class="section-header" style="width: 50%;">Bill of Lading No</td>
+        </tr>
+        <tr>
+            <td style="height: 100px;">
+                Company Name: [ Buyer Name ]<br>
+                Name/Department: [ Buyer Department ]<br>
+                Address: [ Buyer Address ]<br>
+                City/Postal Code: [ Buyer City ]<br>
+                Country: [ Buyer Country ]<br>
+                Phone No.: [ Buyer Tel ]
+            </td>
+            <td>
+                Number of pieces: [ Number of Pieces ]<br>
+                Total Gross Weight: [ Total Gross Weight ]<br>
+                Total Net Weight: [ Total Net Weight ]<br>
+                Carrier: [ Carrier ]
+            </td>
+        </tr>
+    </table>
+
+    <!-- Items Table -->
+    <table style="margin-top: -21px;"> <!-- Overlap borders -->
+        <tr class="items-header">
+            <td style="width: 30%;">Description of goods</td>
+            <td style="width: 15%;">Commodity Code</td>
+            <td style="width: 15%;">Country of origin</td>
+            <td style="width: 10%;">Quantity</td>
+            <td style="width: 15%;">Unit Value, Currency</td>
+            <td style="width: 15%;">Subtotal value, Currency</td>
+        </tr>
+        <tr class="items-body">
+            <td>[ Description of Goods ]</td>
+            <td>[ Commodity Code ]</td>
+            <td>[ Country of Origin ]</td>
+            <td>[ Quantity ]</td>
+            <td>[ Unit Value ]</td>
+            <td>[ Subtotal Value ]</td>
+        </tr>
+        <tr>
+            <td colspan="5" style="text-align: right;">Total value, currency</td>
+            <td>[ Total Value ]</td>
+        </tr>
+    </table>
+
+    <div class="footer-section">
+        <div class="footer-row">
+            <div class="footer-item">Term of transportation: [ Term of Transportation ]</div>
+            <div class="footer-item">Reason for export: [ Reason for Export ]</div>
+        </div>
+
+        <div class="declaration">
+            I declare that the information mentioned above is true and correct to the best of my knowledge.
+        </div>
+
+        <div class="signature-row">
+            <div class="footer-item">Signature:</div>
+            <div class="footer-item" style="text-align: right; padding-right: 100px;">Stamp:</div>
+        </div>
+
+        <div style="margin-top: 40px;">
+            Name:
+        </div>
+    </div>
+
+</body>
+
+</html>

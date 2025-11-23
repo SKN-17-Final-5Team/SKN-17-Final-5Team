@@ -190,6 +190,45 @@ async def main(message: cl.Message):
             msg.content = cleaned_output
             await msg.update()
 
+        # -----------------------------------------------------------------
+        # [Fix] 생성된 문서 파일 감지 및 렌더링 (Iframe)
+        # -----------------------------------------------------------------
+        import re
+        import shutil
+        
+        # sandbox: 경로 패턴 찾기 (비탐욕적 매칭, ) 또는 " 전까지)
+        # Markdown 링크: [여기](sandbox:/path/to/file.html)
+        # 정규식: sandbox: 다음에 오는 경로를 잡되, ) 또는 " 전까지 (공백 허용)
+        match = re.search(r"sandbox:\s?([^)\"]+?\.html)", cleaned_output)
+        
+        if match:
+            file_path = match.group(1).strip()
+            
+            if os.path.exists(file_path):
+                filename = os.path.basename(file_path)
+                
+                # 1. 메시지 내용의 링크 텍스트 수정
+                # [여기](sandbox:...) 링크를 제거하고 안내 문구로 대체
+                msg.content = msg.content.replace(f"[여기](sandbox:{file_path})", f"**{filename}**")
+                msg.content = msg.content.replace(f"sandbox:{file_path}", f"{filename}")
+                
+                # 2. Chainlit File Element 추가 (다운로드/열기 버튼)
+                # public 폴더로 복사하지 않고 원본 경로를 직접 사용
+                elements = [
+                    cl.File(
+                        name=filename,
+                        path=file_path,
+                        display="inline"
+                    )
+                ]
+                msg.elements = elements
+                
+                # 3. 안내 메시지 추가
+                msg.content += f"\n\n(아래 첨부된 파일을 클릭하여 확인해주세요.)"
+                
+                await msg.update()
+                await msg.update()
+
         # 메모리에 대화 저장
         memory.save_gen_turn(
             gen_chat_id=session_id,
