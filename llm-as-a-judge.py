@@ -11,6 +11,7 @@ import config
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import traceback
+import pandas as pd
 
 
 # -------------------------------------
@@ -496,7 +497,9 @@ async def main():
 
     # ===== 3. 결과 저장 =====
     output_file = "evaluation_results.csv"
+    output_xlsx = "evaluation_results.xlsx"
     result_df.to_csv(output_file, index=False, encoding="utf-8-sig")
+    result_df.to_excel(output_xlsx, index=False)
     print(f"\n✓ 평가 결과 저장: {output_file}")
     print("  컬럼: question, answer, judge_score, judge_evaluation, human_score")
     print("  전문가는 'human_score' 컬럼을 채워주세요.\n")
