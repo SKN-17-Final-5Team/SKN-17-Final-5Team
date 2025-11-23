@@ -10,6 +10,8 @@ from my_agents.trade_agent import load_instructions
 import config
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
+import traceback
+
 
 # -------------------------------------
 # 0. OpenAI 클라이언트 설정
@@ -22,9 +24,6 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # -------------------------------------
 # 1. Judge 프롬프트 정의
 # -------------------------------------
-
-# 할 일 : user_question과 system_answer를 보고 1~4 점수로 평가
-# 점수 기준 (1~4)에 대한 설명 포함
 
 IMPROVED_JUDGE_PROMPT = """
 당신에게는 [question]과 [answer] 한 쌍이 주어질 것입니다.
@@ -207,10 +206,6 @@ def load_eval_dataset_from_jsonl(file_path: str) -> pd.DataFrame:
 
     Returns:
         DataFrame with columns: question (필수), answer (선택)
-
-    Note:
-        - 평가 시에는 question 컬럼만 사용됨
-        - answer 컬럼은 로드되지만 에이전트에 전달되지 않음 (reference-free 평가)
     """
     data = []
     with open(file_path, "r", encoding="utf-8") as f:
@@ -230,24 +225,18 @@ def create_test_agent(use_reranker: bool) -> Agent:
     RAG 테스트 전용 에이전트 생성
     - 웹서치 툴 제외
     - Reranker 설정 변경 가능
-
-    Args:
-        use_reranker: Reranker 사용 여부
-
-    Returns:
-        Test Agent
     """
     # config.USE_RERANKER 설정 변경
     config.USE_RERANKER = use_reranker
 
     agent_name = f"Trade Agent ({'WITH' if use_reranker else 'WITHOUT'} Reranker)"
 
-    # RAG 해줄 에이전트
+    # RAG 에이전트
     test_agent = Agent(
         name=agent_name,
         model="gpt-4o",
         instructions=load_instructions(),  # 기존 instructions 로드
-        tools=[search_trade_documents]  # 웹서치 툴 제외, RAG만 사용
+        tools=[search_trade_documents]      # 웹서치 툴 제외, RAG만 사용
     )
 
     print(f"✓ 테스트 에이전트 생성: {agent_name}")
@@ -263,41 +252,26 @@ def create_test_agent(use_reranker: bool) -> Agent:
 async def run_agent_on_question(agent: Agent, question: str) -> str:
     """
     에이전트에게 질문하고 답변 받기
-
-    Args:
-        agent: Agent 인스턴스
-        question: 사용자 질문
-
-    Returns:
-        Agent의 최종 답변
     """
-    # 에이전트 실행 (OpenAI Agents SDK 표준 방식)
     result = await Runner.run(agent, input=question)
-
-    # 최종 답변 추출
     answer = result.final_output
-
     return answer
 
 
 # -------------------------------------
-# 5. LLM Judge 호출 함수 (Chat Completions API 사용)
+# 5. LLM Judge 호출 함수
 # -------------------------------------
 def call_llm_judge(question: str, answer: str, model: str = "gpt-5.1") -> Dict[str, Any]:
     """
     LLM Judge 호출 (Chat Completions API 사용)
-
-    Args:
-        question: 사용자 질문
-        answer: 에이전트 답변
-        model: 평가에 사용할 모델
-
-    Returns:
-        {'evaluation': str, 'score': float, 'raw_output': str}
     """
-    prompt = IMPROVED_JUDGE_PROMPT.format(question=question, answer=answer)
+    # .format() 대신 단순 치환으로 JSON 중괄호 문제 회피
+    prompt = (
+        IMPROVED_JUDGE_PROMPT
+        .replace("{question}", question)
+        .replace("{answer}", answer)
+    )
 
-    # Chat Completions API 요청
     response = client.chat.completions.create(
         model=model,
         messages=[
@@ -309,7 +283,6 @@ def call_llm_judge(question: str, answer: str, model: str = "gpt-5.1") -> Dict[s
         temperature=0.0  # 평가의 일관성을 위해 temperature=0
     )
 
-    # 응답 텍스트 추출
     text = response.choices[0].message.content
 
     # 텍스트 파싱: Evaluation과 Total rating 추출
@@ -349,18 +322,13 @@ def call_llm_judge(question: str, answer: str, model: str = "gpt-5.1") -> Dict[s
 async def evaluate_rag_system(
     eval_df: pd.DataFrame,
     agent: Agent,
-    judge_model: str = "gpt-4o-mini"
+    judge_model: str = "gpt-5.1"
 ) -> pd.DataFrame:
     """
     RAG 시스템 전체 평가
 
-    Args:
-        eval_df: 평가 데이터셋 (question 컬럼 필수)
-        agent: 평가할 Agent
-        judge_model: LLM Judge 모델
-
     Returns:
-        평가 결과 DataFrame (question, judge_score, human_score 컬럼)
+        평가 결과 DataFrame (question, answer, judge_score, judge_evaluation, human_score)
     """
     print(f"\n{'='*60}")
     print(f"평가 시작")
@@ -368,7 +336,9 @@ async def evaluate_rag_system(
     print(f"{'='*60}\n")
 
     questions = []
+    answers = []
     judge_scores = []
+    judge_evaluations = []
 
     for i, row in eval_df.iterrows():
         question = row["question"]
@@ -384,19 +354,29 @@ async def evaluate_rag_system(
             print(f"⚠️ 에이전트 실행 실패: {e}")
             answer = f"ERROR: {str(e)}"
 
+        answers.append(answer)
+
         # 2) LLM Judge 평가
         try:
             judge_result = call_llm_judge(question, answer, model=judge_model)
             judge_scores.append(judge_result["score"])
+            judge_evaluations.append(judge_result["evaluation"])
             print(f"✓ LLM Judge 점수: {judge_result['score']}/4")
         except Exception as e:
-            print(f"⚠️ Judge 평가 실패: {e}")
+            print("⚠️ Judge 평가 실패 발생!")
+            print("  - 예외 타입:", type(e))
+            print("  - 예외 repr:", repr(e))
+            print("  - 예외 메시지:", str(e))
+            traceback.print_exc()
             judge_scores.append(None)
+            judge_evaluations.append(None)
 
-    # 결과 DataFrame 생성 (question, judge_score, human_score)
+    # 결과 DataFrame 생성
     result_df = pd.DataFrame({
         "question": questions,
+        "answer": answers,
         "judge_score": judge_scores,
+        "judge_evaluation": judge_evaluations,
         "human_score": [None] * len(questions)  # 전문가가 나중에 채울 빈 컬럼
     })
 
@@ -419,17 +399,11 @@ async def evaluate_rag_system(
 def visualize_score_distribution(df: pd.DataFrame, score_column: str = "judge_score", output_path: str = None):
     """
     점수 분포를 Pie Chart로 시각화
-
-    Args:
-        df: 평가 결과 DataFrame
-        score_column: 점수 컬럼 이름 (기본값: "judge_score")
-        output_path: 저장 경로 (None이면 화면에만 표시)
     """
     if score_column not in df.columns:
         print(f"⚠️ {score_column} 컬럼이 없습니다.")
         return
 
-    # 점수 분포 계산
     scores = df[score_column].dropna()
     if len(scores) == 0:
         print(f"⚠️ 유효한 점수가 없습니다.")
@@ -438,14 +412,12 @@ def visualize_score_distribution(df: pd.DataFrame, score_column: str = "judge_sc
     score_counts = scores.value_counts().sort_index()
     avg_score = scores.mean()
 
-    # 한글 폰트 설정 (macOS)
+    # 한글 폰트 설정 (macOS 기준)
     plt.rcParams['font.family'] = 'AppleGothic'
     plt.rcParams['axes.unicode_minus'] = False
 
-    # Pie Chart 생성
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    # 색상 설정 (1점=빨강, 2점=주황, 3점=노랑, 4점=초록)
     colors = ['#ff6b6b', '#ffa500', '#ffd93d', '#51cf66']
 
     wedges, texts, autotexts = ax.pie(
@@ -457,7 +429,6 @@ def visualize_score_distribution(df: pd.DataFrame, score_column: str = "judge_sc
         textprops={'fontsize': 12, 'weight': 'bold'}
     )
 
-    # 제목 추가 (평균 점수 포함)
     title = "Judge 점수 분포" if score_column == "judge_score" else "전문가 점수 분포"
     ax.set_title(
         f"{title}\n평균 점수: {avg_score:.2f}/4.00",
@@ -466,7 +437,6 @@ def visualize_score_distribution(df: pd.DataFrame, score_column: str = "judge_sc
         pad=20
     )
 
-    # 범례 추가
     ax.legend(
         wedges,
         [f"{int(score)}점: {count}개" for score, count in score_counts.items()],
@@ -478,7 +448,6 @@ def visualize_score_distribution(df: pd.DataFrame, score_column: str = "judge_sc
 
     plt.tight_layout()
 
-    # 저장 또는 표시
     if output_path:
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         print(f"✓ 시각화 저장: {output_path}")
@@ -496,7 +465,7 @@ async def main():
     메인 실행 함수
     1. JSONL 파일에서 평가 데이터 로드
     2. 에이전트로 답변 생성 및 Judge 평가
-    3. question, judge_score, human_score 컬럼을 가진 CSV 저장
+    3. question, answer, judge_score, judge_evaluation, human_score 컬럼을 가진 CSV 저장
     """
 
     # ===== 1. 평가 데이터 로드 =====
@@ -517,22 +486,20 @@ async def main():
     print("RAG 에이전트 평가 시작")
     print("="*60)
 
-    # 에이전트 생성 (use_reranker는 원하는 설정으로 변경 가능)
     agent = create_test_agent(use_reranker=True)
 
-    # 평가 실행
     result_df = await evaluate_rag_system(
         eval_df=eval_df,
         agent=agent,
-        judge_model="gpt-4o-mini"  # Judge 모델 선택
+        judge_model="gpt-5.1"
     )
 
     # ===== 3. 결과 저장 =====
     output_file = "evaluation_results.csv"
     result_df.to_csv(output_file, index=False, encoding="utf-8-sig")
     print(f"\n✓ 평가 결과 저장: {output_file}")
-    print(f"  컬럼: question, judge_score, human_score")
-    print(f"  전문가는 'human_score' 컬럼을 채워주세요.\n")
+    print("  컬럼: question, answer, judge_score, judge_evaluation, human_score")
+    print("  전문가는 'human_score' 컬럼을 채워주세요.\n")
 
     # ===== 4. 점수 분포 출력 =====
     print("\n" + "="*60)
@@ -545,7 +512,7 @@ async def main():
         score_dist = scores.value_counts().sort_index()
 
         print(f"\n평균 점수: {avg_score:.2f}/4.00")
-        print(f"\n점수 분포:")
+        print("\n점수 분포:")
         for score, count in score_dist.items():
             print(f"  {int(score)}점: {count}개 ({count/len(scores)*100:.1f}%)")
 
