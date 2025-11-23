@@ -2,7 +2,10 @@ import os
 from agents import function_tool
 
 # Template directory path
-TEMPLATE_DIR = "/Users/woojin/Desktop/무역_최신/SKN-17-Final-5Team/document_template/preprocessed_template"
+# 경로 설정
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TEMPLATE_DIR = os.path.join(BASE_DIR, "data_embedding", "data", "document_template", "preprocessed_template")
+OUTPUT_DIR = os.path.join(BASE_DIR, "data_embedding", "data", "document_version")
 
 # Mapping of document types to their HTML template filenames
 TEMPLATE_MAP = {
@@ -30,23 +33,43 @@ def generate_trade_document(document_type: str, data_json: str) -> str:
                    and values are the strings to replace them with.
                    
                    For 'Offer_Sheet', valid keys are:
-                   - [ Date ]
-                   - [ Ref No ]
-                   - [ Buyer Name ]
-                   - [ Seller Name ]
-                   - [ Item No ]
-                   - [ HS Code ]
-                   - [ Product Description ]
-                   - [ Quantity ]
-                   - [ Unit Price ]
-                   - [ Amount ]
-                   - [ Total Amount ]
-                   - [ Country of Origin ]
-                   - [ Shipment ]
-                   - [ Inspection ]
-                   - [ Payment ]
-                   - [ Validity ]
-                   - [ Remarks ]
+                   - [ Date ], [ Ref No ], [ Buyer Name ], [ Seller Name ], [ Item No ], [ HS Code ], 
+                   - [ Product Description ], [ Quantity ], [ Unit Price ], [ Amount ], [ Total Amount ], 
+                   - [ Country of Origin ], [ Shipment ], [ Inspection ], [ Payment ], [ Validity ], [ Remarks ]
+
+                   For 'PI' (Proforma Invoice), valid keys are:
+                   - [ Date ], [ Proforma Invoice No ]
+                   - [ Seller Name ], [ Seller Department ], [ Seller Address ], [ Seller City ], [ Seller Country ], [ Seller Tel ]
+                   - [ Buyer Name ], [ Buyer Department ], [ Buyer Address ], [ Buyer City ], [ Buyer Country ], [ Buyer Tel ]
+                   - [ Number of Pieces ], [ Total Gross Weight ], [ Total Net Weight ], [ Carrier ]
+                   - [ Description of Goods ], [ Commodity Code ], [ Country of Origin ], [ Quantity ], [ Unit Value ], [ Subtotal Value ], [ Total Value ]
+
+                   For 'Commercial_Invoice', valid keys are:
+                   - [ Shipper Name ], [ Address ], [ City, Country ]
+                   - [ Invoice No. ], [ Date ], [ L/C No. ], [ Issuing Bank Name ]
+                   - [ Consignee Name ], [ Address ], [ City, Country ]
+                   - [ Notify Party Name ], [ Address ]
+                   - [ Port of Loading ], [ Final Destination ], [ Carrier Name ], [ Date ]
+                   - [ Marks ], [ Description ], [ EA/BOX ], [ Box ], [ Total EA ], [ Price ], [ Amount ], [ Total Amount ]
+
+                   For 'BL' (Bill of Lading), valid keys are:
+                   - [ Shipper Name ], [ Shipper Address ]
+                   - [ B/L No ]
+                   - [ Consignee Name ], [ Consignee Address ]
+                   - [ Notify Party Name ], [ Notify Party Address ]
+                   - [ Pre-Carriage ], [ Place of Receipt ]
+                   - [ Ocean Vessel ], [ Voyage No ], [ Flag ]
+                   - [ Port of Loading ], [ Port of Discharge ], [ Place of Delivery ], [ Final Destination ]
+                   - [ Container No ], [ Seal No ], [ Marks and No ], [ No and Kinds of Packages ], [ Description of Goods ], [ Gross Weight ], [ Measurement ]
+                   - [ Total Containers ]
+
+                   For 'PL' (Packing List), valid keys are:
+                   - [ Shipper Name ], [ Shipper Address ]
+                   - [ Invoice No ], [ Date ], [ L/C No ], [ L/C Date ]
+                   - [ Buyer Name ], [ Buyer Address ], [ Remarks ]
+                   - [ Notify Party Name ], [ Notify Party Address ]
+                   - [ Port of Loading ], [ Final Destination ], [ Carrier ], [ Sailing Date ]
+                   - [ Marks and Number ], [ Description of Goods ], [ Quantity ], [ Net Weight ], [ Gross Weight ], [ Measurement ]
 
     Returns:
         The filled HTML content as a string.
@@ -102,7 +125,7 @@ def generate_trade_document(document_type: str, data_json: str) -> str:
                  content = content.replace(key, str_value)
 
     # Save the file with versioning
-    output_dir = "/Users/woojin/Desktop/무역_최신/SKN-17-Final-5Team/document_version"
+    output_dir = OUTPUT_DIR
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
