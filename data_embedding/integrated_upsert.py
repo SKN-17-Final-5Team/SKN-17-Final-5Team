@@ -39,7 +39,7 @@ print(f"[INIT] OpenAI 임베딩 모델: {EMBED_MODEL}, dim={EMBED_DIM}\n")
 QDRANT_URL = os.getenv("QDRANT_URL", None)
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", None)
 
-COLLECTION_NAME = "trade_collection_test"
+COLLECTION_NAME = "trade_collectiont"
 
 BASE_PATH = Path(__file__).parent 
 
@@ -78,10 +78,10 @@ DOCS_TOKEN = [
 ]
 
 # CISG 전용 설정
-CISG_DOC_ID = "CISG"
-CISG_DOCUMENT_PATH = "Target_data/다자조약상세.txt"
-CISG_BASE_CHUNKS_PATH = "Target_data/cisg_chunks.json"
-CISG_CHUNK_STRATEGY = "Article"  # "Ho_Segmented", "Paragraph", "Article" 중 택1
+# CISG_DOC_ID = "CISG"
+# CISG_DOCUMENT_PATH = "Target_data/다자조약상세.txt"
+# CISG_BASE_CHUNKS_PATH = "Target_data/cisg_chunks.json"
+# CISG_CHUNK_STRATEGY = "Article"  # "Ho_Segmented", "Paragraph", "Article" 중 택1
 
 # ============================================================
 # A. 문서 로드
@@ -309,14 +309,14 @@ def build_all_chunks() -> Tuple[Dict[str, str], Dict[str, List[Dict]], List[Dict
         flat_chunks.extend(chunks)
 
         # 2) CISG 전용 문서
-    cisg_text = load_document(CISG_DOCUMENT_PATH)
-    doc_texts[CISG_DOC_ID] = cisg_text
+    # cisg_text = load_document(CISG_DOCUMENT_PATH)
+    # doc_texts[CISG_DOC_ID] = cisg_text
 
-    base_chunks_raw = load_base_chunks(CISG_BASE_CHUNKS_PATH)
-    base_chunks_ready = attach_chunk_spans(base_chunks_raw)
-    cisg_chunks = merge_chunks(base_chunks_ready, CISG_CHUNK_STRATEGY, doc_id=CISG_DOC_ID)
-    chunks_by_doc[CISG_DOC_ID] = cisg_chunks
-    flat_chunks.extend(cisg_chunks)
+    # base_chunks_raw = load_base_chunks(CISG_BASE_CHUNKS_PATH)
+    # base_chunks_ready = attach_chunk_spans(base_chunks_raw)
+    # cisg_chunks = merge_chunks(base_chunks_ready, CISG_CHUNK_STRATEGY, doc_id=CISG_DOC_ID)
+    # chunks_by_doc[CISG_DOC_ID] = cisg_chunks
+    # flat_chunks.extend(cisg_chunks)
 
     # doc_texts : 문서 원문을 그대로 저장한 딕셔너리.
     # chunks_by_docs : 문서별로 청크 리스트를 따로 저장한 구조.
@@ -384,7 +384,7 @@ def upload_chunks_to_qdrant(
     client: QdrantClient,
     collection_name: str,
     chunks: List[Dict],
-    batch_size: int = 50,
+    batch_size: int = 20,
 ) -> None:
     print(f"[QDRANT] 청크 임베딩 계산 및 업로드 시작 (collection={collection_name})")
 
