@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Proforma Invoice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 60px 80px;
+            font-size: 10pt;
+            line-height: 1.3;
+        }
+
+        h1 {
+            text-align: left;
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 24pt;
+            font-weight: normal;
+            text-transform: uppercase;
+        }
+
+        .header-line {
+            border-top: 2px solid #000;
+            border-bottom: 1px solid #000;
+            height: 2px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        .section-header {
+            background-color: #d9d9d9;
+            font-weight: bold;
+            padding: 5px;
+        }
+
+        .no-border-bottom {
+            border-bottom: none;
+        }
+
+        .no-border-top {
+            border-top: none;
+        }
+
+        .items-header th {
+            font-weight: normal;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .items-body td {
+            height: 200px;
+        }
+
+        .footer-section {
+            margin-top: 20px;
+        }
+
+        .footer-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .footer-item {
+            flex: 1;
+        }
+
+        .declaration {
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+
+        .signature-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>PROFORMA INVOICE</h1>
+    <div class="header-line"></div>
+
+    <table>
+        <!-- Proforma Invoice Header -->
+        <tr>
+            <td colspan="2" class="section-header">Proforma Invoice</td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                Date: 2025.11.23<br>
+                Proforma invoice #: K-BEAUTY/FOBICN/2025-1123
+            </td>
+        </tr>
+
+        <!-- SENT BY -->
+        <tr>
+            <td colspan="2" class="section-header">SENT BY</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="height: 100px;">
+                Company Name: K-BEAUTY EXPORTS CO., LTD.<br>
+                Name/Department: Export Department<br>
+                Address: To be advised<br>
+                City/Postal Code: Seoul / TBA<br>
+                Country: Republic of Korea<br>
+                Tel./Fax No.: TBA
+            </td>
+        </tr>
+
+        <!-- SENT TO & Bill of Lading No -->
+        <tr>
+            <td class="section-header" style="width: 50%;">SENT TO</td>
+            <td class="section-header" style="width: 50%;">Bill of Lading No</td>
+        </tr>
+        <tr>
+            <td style="height: 100px;">
+                Company Name: SKN17<br>
+                Name/Department: Playdata<br>
+                Address: 대륭17차 18층<br>
+                City/Postal Code: Seoul / TBA<br>
+                Country: Korea<br>
+                Phone No.: TBA
+            </td>
+            <td>
+                Number of pieces: 22,000 pcs<br>
+                Total Gross Weight: 9,800 kg<br>
+                Total Net Weight: 8,400 kg<br>
+                Carrier: HMM Co., Ltd.
+            </td>
+        </tr>
+    </table>
+
+    <!-- Items Table -->
+    <table style="margin-top: -21px;">
+        <tr class="items-header">
+            <td style="width: 30%;">Description of goods</td>
+            <td style="width: 15%;">Commodity Code</td>
+            <td style="width: 15%;">Country of origin</td>
+            <td style="width: 10%;">Quantity</td>
+            <td style="width: 15%;">Unit Value, Currency</td>
+            <td style="width: 15%;">Subtotal value, Currency</td>
+        </tr>
+        <tr class="items-body">
+            <td>
+                Premium Facial Cream 50ml – 10,000 pcs @ USD 4.20<br>
+                Hydrating Toner 200ml – 12,000 pcs @ USD 3.10
+            </td>
+            <td>
+                3304.99<br>
+                3304.99
+            </td>
+            <td>
+                Republic of Korea<br>
+                Republic of Korea
+            </td>
+            <td>
+                10,000 pcs<br>
+                12,000 pcs
+            </td>
+            <td>
+                4.20 USD<br>
+                3.10 USD
+            </td>
+            <td>
+                42,000.00 USD<br>
+                37,200.00 USD
+            </td>
+        </tr>
+        <tr>
+            <td colspan="5" style="text-align: right;">Total value, currency</td>
+            <td>79,200.00 USD</td>
+        </tr>
+    </table>
+
+    <div class="footer-section">
+        <div class="footer-row">
+            <div class="footer-item">Term of transportation: FOB INCHEON PORT, KOREA (Incoterms® 2020)</div>
+            <div class="footer-item">Reason for export: Sale of cosmetic products</div>
+        </div>
+
+        <div class="declaration">
+            I declare that the information mentioned above is true and correct to the best of my knowledge.
+        </div>
+
+        <div class="signature-row">
+            <div class="footer-item">Signature:</div>
+            <div class="footer-item" style="text-align: right; padding-right: 100px;">Stamp:</div>
+        </div>
+
+        <div style="margin-top: 40px;">
+            Name:
+        </div>
+    </div>
+
+</body>
+
+</html>

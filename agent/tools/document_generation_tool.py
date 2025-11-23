@@ -127,6 +127,21 @@ def generate_trade_document(document_type: str, data_json: str) -> str:
         # Convert newlines to <br> for HTML rendering
         str_value = str_value.replace('\n', '<br>')
         
+        # [NEW] Auto-fill Date if empty
+        # If the key is related to the main document date and is empty, use today's date
+        if not str_value.strip():
+            clean_key = key.strip("[] ")
+            if clean_key in ["Date", "Contract Date"]:
+                from datetime import datetime
+                str_value = datetime.now().strftime("%Y-%m-%d")
+
+        # [NEW] Highlight missing information
+        # If the value is empty (meaning user didn't provide it), make it visually distinct
+        if not str_value.strip():
+            # Use a yellow background with red text for high visibility
+            clean_key_for_display = key.strip("[] ")
+            str_value = f'<span style="background-color: #ffffcc; color: #cc0000; font-weight: bold; border: 1px dashed #cc0000; padding: 2px 4px;">[ {clean_key_for_display} ]</span>'
+        
         # The template uses [ Key ] format (with spaces).
         # The agent might send "Key" or "[ Key ]".
         
