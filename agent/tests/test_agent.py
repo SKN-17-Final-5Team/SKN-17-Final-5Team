@@ -40,7 +40,7 @@ class TestTradeAgent:
 
         assert trade_agent is not None
         assert trade_agent.name == "Trade Compliance Analyst"
-        assert trade_agent.model == "gpt-4o-mini"
+        assert trade_agent.model == "gpt-4o"
         assert len(trade_agent.tools) > 0
 
     def test_agent_tools(self):
