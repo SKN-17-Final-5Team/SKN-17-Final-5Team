@@ -286,7 +286,7 @@ class EDARepository:
             ])
 
             response = self.openai_client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "당신은 대화를 간결하게 요약하는 전문가입니다."},
                     {"role": "user", "content": f"다음 대화 내용을 간결하게 요약해주세요.\n\n{conversation_text}\n\n요약:"}

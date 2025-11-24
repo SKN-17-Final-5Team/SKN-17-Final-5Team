@@ -105,8 +105,8 @@
         </tr>
         <tr>
             <td colspan="2">
-                Date: 2025-10-01<br>
-                Proforma invoice #: PI-K-BEAUTY/2025
+                Date: 2025-11-24<br>
+                Proforma invoice #: PI-K-BEAUTY/2025-1123
             </td>
         </tr>
 
@@ -141,8 +141,8 @@
             </td>
             <td>
                 Number of pieces: 22,000 pcs<br>
-                Total Gross Weight: 3,150kg<br>
-                Total Net Weight: 3,000kg<br>
+                Total Gross Weight: 3,150 kg<br>
+                Total Net Weight: 3,000 kg<br>
                 Carrier: Vessel
             </td>
         </tr>
@@ -159,7 +159,7 @@
             <td style="width: 15%;">Subtotal value, Currency</td>
         </tr>
         <tr class="items-body">
-            <td>1) Premium Facial Cream 50ml<br>2) Hydrating Toner 200ml</td>
+            <td>Premium Facial Cream 50ml<br>Hydrating Toner 200ml</td>
             <td>3304.99<br>3304.99</td>
             <td>Republic of Korea<br>Republic of Korea</td>
             <td>10,000 pcs<br>12,000 pcs</td>
@@ -175,7 +175,7 @@
     <div class="footer-section">
         <div class="footer-row">
             <div class="footer-item">Term of transportation: Vessel</div>
-            <div class="footer-item">Reason for export: Export of beauty products</div>
+            <div class="footer-item">Reason for export: Cosmetics Export</div>
         </div>
 
         <div class="declaration">

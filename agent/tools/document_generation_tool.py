@@ -21,7 +21,7 @@ TEMPLATE_MAP = {
 import json
 
 @function_tool
-def generate_trade_document(document_type: str, data_json: str) -> str:
+def generate_trade_document(document_type: str, data_json: str, overwrite: bool = False) -> str:
     """
     Generates a trade document by filling a pre-defined HTML template with the provided data.
 
@@ -96,17 +96,51 @@ def generate_trade_document(document_type: str, data_json: str) -> str:
     """
     print(f"DEBUG: Received document_type: {document_type}")
     print(f"DEBUG: Received data_json: {data_json}")
+    print(f"DEBUG: Received overwrite: {overwrite}")
 
     if document_type not in TEMPLATE_MAP:
         valid_types = ", ".join(TEMPLATE_MAP.keys())
         return f"Error: Invalid document_type '{document_type}'. Valid types are: {valid_types}"
 
     try:
-        data = json.loads(data_json)
-        if not isinstance(data, dict):
+        new_data = json.loads(data_json)
+        if not isinstance(new_data, dict):
              return "Error: data_json must represent a dictionary."
     except json.JSONDecodeError:
         return "Error: data_json must be a valid JSON string."
+
+    # [State Persistence Logic]
+    # Define path for the data file (e.g., latest_Offer_Sheet_data.json)
+    data_file_name = f"latest_{document_type}_data.json"
+    data_file_path = os.path.join(OUTPUT_DIR, data_file_name)
+
+    # Ensure output directory exists
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
+
+    final_data = {}
+
+    # 1. Load existing data if available and not overwriting
+    if not overwrite and os.path.exists(data_file_path):
+        try:
+            with open(data_file_path, 'r', encoding='utf-8') as f:
+                existing_data = json.load(f)
+                if isinstance(existing_data, dict):
+                    final_data = existing_data
+                    print(f"DEBUG: Loaded existing data: {final_data.keys()}")
+        except Exception as e:
+            print(f"WARNING: Failed to load existing data: {e}")
+
+    # 2. Merge new data (new data takes precedence)
+    final_data.update(new_data)
+    print(f"DEBUG: Final merged data keys: {final_data.keys()}")
+
+    # 3. Save updated data back to JSON
+    try:
+        with open(data_file_path, 'w', encoding='utf-8') as f:
+            json.dump(final_data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return f"Error saving data state: {str(e)}"
 
     template_filename = TEMPLATE_MAP[document_type]
     template_path = os.path.join(TEMPLATE_DIR, template_filename)
@@ -121,7 +155,7 @@ def generate_trade_document(document_type: str, data_json: str) -> str:
 
     # Replace placeholders with data
     # Replace placeholders with data
-    for key, value in data.items():
+    for key, value in final_data.items():
         str_value = str(value) if value is not None else ""
         
         # Convert newlines to <br> for HTML rendering
