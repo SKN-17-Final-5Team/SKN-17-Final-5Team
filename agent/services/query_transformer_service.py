@@ -258,7 +258,7 @@ F. 출력 형식 (JSON)
 
 async def rewrite_and_decompose_query(
     query: str,
-    model: str = "gpt-4o-mini"
+    model: str = "gpt-4o"
 ) -> QueryTransformResult:
     """
     사용자 쿼리를 검색에 최적화된 형태로 변환
