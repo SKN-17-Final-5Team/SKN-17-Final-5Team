@@ -123,7 +123,7 @@
     <!-- 상단 정보 -->
     <div class="meta">
         <div class="meta-row">
-            <span class="meta-label">Date</span> 2025-12-01
+            <span class="meta-label">Date</span> 2025-10-12
         </div>
         <div class="meta-row">
             <span class="meta-label">Ref No.</span> K-BEAUTY/FOBICN/2025-1123
@@ -155,7 +155,7 @@
                     <td style="vertical-align: top;">Premium Facial Cream 50ml<br>Hydrating Toner 200ml</td>
                     <td style="vertical-align: top;">10,000 pcs<br>12,000 pcs</td>
                     <td style="vertical-align: top;">USD 4.20<br>USD 3.10</td>
-                    <td style="vertical-align: top;">USD 42,000<br>USD 37,200</td>
+                    <td style="vertical-align: top;">USD 42,000.00<br>USD 37,200.00</td>
                 </tr>
             </tbody>
             <tfoot>
@@ -165,7 +165,7 @@
                     <td></td>
                     <td></td>
                     <td class="total-label" style="text-align: center;">TOTAL :</td>
-                    <td>USD 79,200</td>
+                    <td>USD 79,200.00</td>
                 </tr>
             </tfoot>
         </table>
@@ -177,7 +177,7 @@
             <span class="detail-label">Country of Origin</span> Republic of Korea<br>Republic of Korea
         </div>
         <div class="detail-row">
-            <span class="detail-label">Shipment</span> Incheon Port, Korea to Los Angeles Port, USA
+            <span class="detail-label">Shipment</span> Incheon Port, Korea
         </div>
         <div class="detail-row">
             <span class="detail-label">Inspection</span> Standard
@@ -189,7 +189,7 @@
             <span class="detail-label">Validity</span> 2025-12-07
         </div>
         <div class="detail-row">
-            <span class="detail-label">Remarks</span> FOB Incheon Port
+            <span class="detail-label">Remarks</span> None
         </div>
     </div>
 

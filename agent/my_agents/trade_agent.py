@@ -54,7 +54,7 @@ def create_trade_agent(memory_context: str = "") -> Agent:
 
     return Agent(
         name="Trade Compliance Analyst",
-        model="gpt-4o",
+        model="gpt-4o-mini",
         instructions=instructions,
         tools=[search_trade_documents, search_web, generate_trade_document],
     )
@@ -66,7 +66,7 @@ def create_trade_agent(memory_context: str = "") -> Agent:
 
 trade_agent = Agent(
     name="Trade Compliance Analyst",
-    model="gpt-4o",
+    model="gpt-4o-mini",
     instructions=load_instructions(),  # 외부 파일에서 로드
     tools=[search_trade_documents, search_web, generate_trade_document],
 )

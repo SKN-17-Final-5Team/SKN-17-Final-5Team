@@ -123,7 +123,7 @@
     <!-- 상단 정보 -->
     <div class="meta">
         <div class="meta-row">
-            <span class="meta-label">Date</span> 2025-12-01
+            <span class="meta-label">Date</span> 2025-12-07
         </div>
         <div class="meta-row">
             <span class="meta-label">Ref No.</span> K-BEAUTY/FOBICN/2025-1123
@@ -174,13 +174,13 @@
     <!-- 하단 조건들 -->
     <div class="detail-block">
         <div class="detail-row">
-            <span class="detail-label">Country of Origin</span> Republic of Korea<br>Republic of Korea
+            <span class="detail-label">Country of Origin</span> Republic of Korea
         </div>
         <div class="detail-row">
-            <span class="detail-label">Shipment</span> By Vessel from Incheon Port, Korea to Los Angeles Port, USA on 2025-12-15 (Estimated)
+            <span class="detail-label">Shipment</span> Incheon Port, Korea to Virginia Port, USA via Vessel
         </div>
         <div class="detail-row">
-            <span class="detail-label">Inspection</span> Standard
+            <span class="detail-label">Inspection</span> None
         </div>
         <div class="detail-row">
             <span class="detail-label">Payment</span> 100% by Irrevocable L/C at sight

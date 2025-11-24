@@ -105,8 +105,8 @@
         </tr>
         <tr>
             <td colspan="2">
-                Date: 2025-11-23<br>
-                Proforma invoice #: PI-K-BEAUTY/FOBICN/2025-1123
+                Date: 2025-10-01<br>
+                Proforma invoice #: PI-K-BEAUTY/2025
             </td>
         </tr>
 
@@ -140,9 +140,9 @@
                 Phone No.: +1 (305) 777-8888
             </td>
             <td>
-                Number of pieces: 10,000 pcs<br>12,000 pcs<br>
-                Total Gross Weight: 550kg<br>2,600kg<br>
-                Total Net Weight: 500kg<br>2,400kg<br>
+                Number of pieces: 22,000 pcs<br>
+                Total Gross Weight: 3,150kg<br>
+                Total Net Weight: 3,000kg<br>
                 Carrier: Vessel
             </td>
         </tr>
@@ -159,23 +159,23 @@
             <td style="width: 15%;">Subtotal value, Currency</td>
         </tr>
         <tr class="items-body">
-            <td>Premium Facial Cream 50ml<br>Hydrating Toner 200ml</td>
+            <td>1) Premium Facial Cream 50ml<br>2) Hydrating Toner 200ml</td>
             <td>3304.99<br>3304.99</td>
             <td>Republic of Korea<br>Republic of Korea</td>
             <td>10,000 pcs<br>12,000 pcs</td>
             <td>USD 4.20<br>USD 3.10</td>
-            <td>USD 42,000<br>USD 37,200</td>
+            <td>USD 42,000.00<br>USD 37,200.00</td>
         </tr>
         <tr>
             <td colspan="5" style="text-align: right;">Total value, currency</td>
-            <td>USD 79,200</td>
+            <td>USD 79,200.00</td>
         </tr>
     </table>
 
     <div class="footer-section">
         <div class="footer-row">
-            <div class="footer-item">Term of transportation: FOB Incheon Port</div>
-            <div class="footer-item">Reason for export: Export of Cosmetics</div>
+            <div class="footer-item">Term of transportation: Vessel</div>
+            <div class="footer-item">Reason for export: Export of beauty products</div>
         </div>
 
         <div class="declaration">
