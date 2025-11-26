@@ -1,24 +1,208 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { MessageSquare, Save, Download, Loader2 } from 'lucide-react'
+import { useRef, useState, useEffect } from 'react'
+import { MessageSquare, Save, Download, Loader2, FileText, ChevronDown } from 'lucide-react'
 import ContractEditor, { ContractEditorRef } from '@/components/editor/ContractEditor'
 import AISidebar from '@/components/chat/AISidebar'
+import { documents, DocumentType, getTemplateByType } from '@/templates'
 import '@/components/editor/editor.css'
+
+const DOC_CONTENT_KEY = 'contract-editor-documents'
+const DOC_TYPE_KEY = 'contract-editor-doc-type'
+const SHARED_FIELDS_KEY = 'contract-editor-shared-fields'
+
+// Extract shared field values from HTML content
+function extractSharedFields(html: string): Record<string, string> {
+  const fields: Record<string, string> = {}
+  const regex = /<span[^>]*class="shared-field"[^>]*data-field="([^"]+)"[^>]*>([^<]*)<\/span>/g
+  let match
+  while ((match = regex.exec(html)) !== null) {
+    const fieldName = match[1]
+    const fieldValue = match[2]
+    // Only store if not a placeholder like [FIELD_NAME]
+    if (fieldValue && !fieldValue.startsWith('[')) {
+      fields[fieldName] = fieldValue
+    }
+  }
+  return fields
+}
+
+// Apply shared field values to HTML content
+function applySharedFields(html: string, fields: Record<string, string>): string {
+  let result = html
+  for (const [fieldName, fieldValue] of Object.entries(fields)) {
+    // Replace all instances of this shared field
+    const regex = new RegExp(
+      `(<span[^>]*class="shared-field"[^>]*data-field="${fieldName}"[^>]*>)([^<]*)(<\\/span>)`,
+      'g'
+    )
+    result = result.replace(regex, `$1${fieldValue}$3`)
+  }
+  return result
+}
+
+// Load shared field values from localStorage
+function loadSharedFields(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const saved = localStorage.getItem(SHARED_FIELDS_KEY)
+    return saved ? JSON.parse(saved) : {}
+  } catch {
+    return {}
+  }
+}
+
+// Save shared field values to localStorage
+function saveSharedFields(fields: Record<string, string>) {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = loadSharedFields()
+    const merged = { ...existing, ...fields }
+    localStorage.setItem(SHARED_FIELDS_KEY, JSON.stringify(merged))
+  } catch {
+    console.error('Failed to save shared fields to localStorage')
+  }
+}
+
+// Load all saved document contents
+function loadSavedDocuments(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const saved = localStorage.getItem(DOC_CONTENT_KEY)
+    return saved ? JSON.parse(saved) : {}
+  } catch {
+    return {}
+  }
+}
+
+// Save document content for a specific document type
+function saveDocumentContent(docType: string, content: string) {
+  if (typeof window === 'undefined') return
+  try {
+    const existing = loadSavedDocuments()
+    existing[docType] = content
+    localStorage.setItem(DOC_CONTENT_KEY, JSON.stringify(existing))
+  } catch {
+    console.error('Failed to save document to localStorage')
+  }
+}
+
+// Load saved document type
+function loadSavedDocType(): DocumentType {
+  if (typeof window === 'undefined') return 'saleContract'
+  try {
+    const saved = localStorage.getItem(DOC_TYPE_KEY)
+    return (saved as DocumentType) || 'saleContract'
+  } catch {
+    return 'saleContract'
+  }
+}
+
+// Save current document type
+function saveDocType(docType: DocumentType) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(DOC_TYPE_KEY, docType)
+}
 
 export default function Home() {
   const editorRef = useRef<ContractEditorRef>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isExporting, setIsExporting] = useState(false)
+  const [selectedDocType, setSelectedDocType] = useState<DocumentType>('saleContract')
+  const [isDocSelectorOpen, setIsDocSelectorOpen] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const isSwitchingDocRef = useRef(false)
+
+  // Load saved state on mount
+  useEffect(() => {
+    const savedDocType = loadSavedDocType()
+    const savedDocs = loadSavedDocuments()
+    const sharedFields = loadSharedFields()
+
+    setSelectedDocType(savedDocType)
+
+    // Apply saved content or template
+    const applyContent = () => {
+      if (!editorRef.current) {
+        setTimeout(applyContent, 100)
+        return
+      }
+
+      // Use saved content if exists, otherwise use template
+      let content = savedDocs[savedDocType] || getTemplateByType(savedDocType)
+
+      // Apply shared field values to the content
+      content = applySharedFields(content, sharedFields)
+
+      editorRef.current.setContent(content)
+      setIsInitialized(true)
+    }
+
+    setTimeout(applyContent, 200)
+  }, [])
+
+  // Auto-save current document content when it changes
+  const handleContentChange = (content: string) => {
+    if (!isInitialized || isSwitchingDocRef.current) return
+    saveDocumentContent(selectedDocType, content)
+
+    // Extract and save shared field values
+    const fields = extractSharedFields(content)
+    if (Object.keys(fields).length > 0) {
+      saveSharedFields(fields)
+    }
+  }
 
   const handleSave = () => {
     const content = editorRef.current?.getContent()
     if (content) {
-      console.log('Saving document...', content)
+      saveDocumentContent(selectedDocType, content)
+
+      // Extract and save shared field values
+      const fields = extractSharedFields(content)
+      if (Object.keys(fields).length > 0) {
+        saveSharedFields(fields)
+      }
+
       setLastSaved(new Date())
     }
   }
+
+  const handleDocTypeChange = (docType: DocumentType) => {
+    // Prevent auto-save during document switching (use ref for synchronous update)
+    isSwitchingDocRef.current = true
+
+    // Save current document content and extract shared fields first
+    const currentContent = editorRef.current?.getContent() || ''
+    if (currentContent) {
+      saveDocumentContent(selectedDocType, currentContent)
+      const fields = extractSharedFields(currentContent)
+      if (Object.keys(fields).length > 0) {
+        saveSharedFields(fields)
+      }
+    }
+
+    // Load the target document (saved content or template)
+    const savedDocs = loadSavedDocuments()
+    const sharedFields = loadSharedFields()
+    let targetContent = savedDocs[docType] || getTemplateByType(docType)
+
+    // Apply shared field values to the new document
+    targetContent = applySharedFields(targetContent, sharedFields)
+
+    editorRef.current?.setContent(targetContent)
+    setSelectedDocType(docType)
+    setIsDocSelectorOpen(false)
+    saveDocType(docType)
+
+    // Re-enable auto-save after state updates
+    setTimeout(() => {
+      isSwitchingDocRef.current = false
+    }, 100)
+  }
+
+  const selectedDoc = documents.find(d => d.id === selectedDocType)
 
   const handleExport = async () => {
     const content = editorRef.current?.getContent()
@@ -27,10 +211,8 @@ export default function Home() {
     setIsExporting(true)
 
     try {
-      // Dynamic import for html2pdf.js (client-side only)
       const html2pdf = (await import('html2pdf.js')).default
 
-      // Create a temporary container for PDF generation
       const container = document.createElement('div')
       container.id = 'pdf-export-container'
       container.innerHTML = `
@@ -54,7 +236,7 @@ export default function Home() {
 
       const options = {
         margin: 10,
-        filename: 'Sale_Contract.pdf',
+        filename: `${selectedDoc?.name || 'Document'}.pdf`,
         image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
@@ -74,13 +256,43 @@ export default function Home() {
     <div className="flex h-screen bg-gray-50">
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header - Simplified */}
+        {/* Header */}
         <header className="bg-white border-b border-gray-200 px-4 py-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-500">
-              {lastSaved ? `저장됨: ${lastSaved.toLocaleTimeString('ko-KR')}` : ''}
-            </span>
+            {/* Document Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setIsDocSelectorOpen(!isDocSelectorOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <FileText className="w-4 h-4" />
+                {selectedDoc?.nameKo || '서류 선택'}
+                <ChevronDown className={`w-4 h-4 transition-transform ${isDocSelectorOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isDocSelectorOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                  {documents.map((doc) => (
+                    <button
+                      key={doc.id}
+                      onClick={() => handleDocTypeChange(doc.id)}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                        selectedDocType === doc.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                      }`}
+                    >
+                      {doc.nameKo}
+                      <span className="text-xs text-gray-400 ml-2">({doc.name})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
             <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-400">
+                {lastSaved ? `저장됨: ${lastSaved.toLocaleTimeString('ko-KR')}` : ''}
+              </span>
               <button
                 onClick={handleSave}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors"
@@ -115,7 +327,7 @@ export default function Home() {
         {/* Editor */}
         <main className="flex-1 overflow-auto p-4">
           <div className="max-w-5xl mx-auto">
-            <ContractEditor ref={editorRef} />
+            <ContractEditor ref={editorRef} initialDocType={selectedDocType} onChange={handleContentChange} />
           </div>
         </main>
       </div>

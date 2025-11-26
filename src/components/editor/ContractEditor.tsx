@@ -8,8 +8,9 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Highlight from '@tiptap/extension-highlight'
 import { useCallback, useEffect, forwardRef, useImperativeHandle } from 'react'
-import { saleContractTemplateHTML } from '@/templates/saleContract'
+import { DocumentType, getTemplateByType } from '@/templates'
 import EditorToolbar from './EditorToolbar'
+import SharedFieldMark from './SharedFieldMark'
 
 export interface ContractEditorRef {
   getContent: () => string
@@ -21,12 +22,13 @@ export interface ContractEditorRef {
 
 interface ContractEditorProps {
   initialContent?: string
+  initialDocType?: DocumentType
   onChange?: (content: string) => void
   className?: string
 }
 
 const ContractEditor = forwardRef<ContractEditorRef, ContractEditorProps>(
-  ({ initialContent, onChange, className }, ref) => {
+  ({ initialContent, initialDocType, onChange, className }, ref) => {
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
@@ -53,8 +55,9 @@ const ContractEditor = forwardRef<ContractEditorRef, ContractEditorProps>(
         Highlight.configure({
           multicolor: true,
         }),
+        SharedFieldMark,
       ],
-      content: initialContent || saleContractTemplateHTML,
+      content: initialContent || getTemplateByType(initialDocType || 'saleContract'),
       editorProps: {
         attributes: {
           class: 'prose prose-sm sm:prose lg:prose-lg max-w-none focus:outline-none min-h-[500px] p-4',

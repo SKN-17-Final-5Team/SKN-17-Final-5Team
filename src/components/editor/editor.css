@@ -136,6 +136,16 @@
   font-weight: 500;
 }
 
+/* Shared fields (sync across documents) */
+.contract-editor .ProseMirror span.shared-field {
+  background-color: #bbf7d0;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  color: #166534;
+  font-weight: 500;
+  border-bottom: 2px solid #22c55e;
+}
+
 /* Selection */
 .contract-editor .ProseMirror ::selection {
   background-color: #bfdbfe;
