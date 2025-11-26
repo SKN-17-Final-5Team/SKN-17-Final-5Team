@@ -11,7 +11,10 @@ import os
 from typing import Optional
 from agents import function_tool
 from tavily import TavilyClient
+from dotenv import load_dotenv
 
+# .env 파일 로드
+load_dotenv()
 
 # Tavily 클라이언트 초기화
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
@@ -27,14 +30,23 @@ def search_web(
     """
     Tavily API를 사용한 실시간 웹 검색
 
-    내부 문서에 정보가 없거나 최신 정보가 필요할 때 사용하세요. 
-    특정 시점을 언급하지 않는 한 가장 최신 정보만 탐색해야 합니다.
+    **사용 조건 (trade_instructions.txt 시나리오 기준):**
 
-    사용 시나리오:
-    - 최근 뉴스나 이벤트 (예: "2025년 무역 규제 변경사항")
-    - 실시간 시장 정보 (예: "현재 환율 동향")
-    - 최신 규제 업데이트 (예: "미국 수출 규제 최신 변경")
-    - 정보 검증 (예: "특정 기업의 최근 무역 사기 사례")
+    시나리오 A) 최신 뉴스/동향만 요구하는 질문 → 이 툴만 사용
+    - 예: "최근 미중 무역 갈등 상황은?", "2025년 미국 관세 정책 변화는?"
+    - 순수하게 최신 뉴스, 동향, 시황만 물어보는 경우
+
+    시나리오 B) 무역 실무 지식 질문 → 이 툴 사용 안 함
+    - 문서 검색만으로 충분 (search_trade_documents만 사용)
+
+    시나리오 C) 최신 정보 + 문서 내용 통합 질문 → search_trade_documents와 함께 사용
+    - 예: "최근 미국 수출 규제 변경사항과 우리 문서의 대응 방안은?"
+    - 내부 문서 검색 후 이 툴로 최신 정보 보완
+
+    **검색 결과 제공 시 필수사항:**
+    1. 출처 URL과 발행 날짜를 **반드시** 명시
+    2. "최신" 정보 요청 시 2025년 → 2024년 → 2023년 순서로 최근 정보 우선 제공
+    3. 내부 문서 기반 답변과 웹 검색 기반 답변을 **명확히 구분**
 
     Args:
         query: 검색할 질문 또는 키워드
@@ -43,18 +55,20 @@ def search_web(
         include_answer: AI 요약 답변 포함 여부 (기본값: True)
 
     Returns:
-        포맷팅된 검색 결과 텍스트 (출처 URL 포함)
+        포맷팅된 검색 결과 텍스트 (출처 URL 및 발행 날짜 포함)
     """
     print(f"\n🌐 웹 검색 시작: '{query}' (최대 {max_results}개 결과, {search_depth} 모드)")
 
     try:
         # Tavily API로 웹 검색 수행
+        # 최신 정보 우선: days 파라미터로 최근 데이터 우선 검색
         response = tavily_client.search(
             query=query,
             search_depth=search_depth,
             max_results=max_results,
             include_answer=include_answer,
-            topic="general"
+            topic="general",
+            days=730  # 최근 2년 이내 정보 우선 (2025년, 2024년 우선)
         )
 
         # 검색 결과 포맷팅
@@ -70,24 +84,35 @@ def search_web(
 
         # 검색 결과 추가
         if response.get('results'):
-            num_results = len(response['results'])
+            # 결과를 발행일 기준으로 정렬 (최신순)
+            results = response['results']
+            # published_date가 있는 것을 우선, 그 다음 날짜순 정렬
+            sorted_results = sorted(
+                results,
+                key=lambda x: x.get('published_date', '0000-01-01'),
+                reverse=True  # 최신순
+            )
+
+            num_results = len(sorted_results)
             formatted_results.append("=" * 60)
-            formatted_results.append(f"🔍 웹 검색 결과 ({num_results}개):")
+            formatted_results.append(f"🔍 웹 검색 결과 ({num_results}개, 최신순):")
             formatted_results.append("=" * 60)
 
-            for i, result in enumerate(response['results'], 1):
+            for i, result in enumerate(sorted_results, 1):
                 title = result.get('title', 'No title')
                 url = result.get('url', '')
                 content = result.get('content', '')
                 score = result.get('score', 0)
+                published_date = result.get('published_date', '날짜 정보 없음')
 
                 # 내용이 너무 길면 잘라냄 (500자로 제한)
                 content_preview = content[:500] + "..." if len(content) > 500 else content
 
                 formatted_results.append(f"\n[{i}] {title}")
-                formatted_results.append(f"   URL: {url}")
-                formatted_results.append(f"   관련도: {score:.2f}")
-                formatted_results.append(f"   내용: {content_preview}")
+                formatted_results.append(f"   📅 발행일: {published_date}")
+                formatted_results.append(f"   🔗 URL: {url}")
+                formatted_results.append(f"   📊 관련도: {score:.2f}")
+                formatted_results.append(f"   📰 내용: {content_preview}")
 
             print(f"✓ 웹 검색 완료: {num_results}개 결과 반환\n")
             return "\n".join(formatted_results)

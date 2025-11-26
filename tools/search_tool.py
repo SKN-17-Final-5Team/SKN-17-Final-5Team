@@ -28,14 +28,29 @@ from services.query_transformer_service import rewrite_and_decompose_query
 @function_tool
 async def search_trade_documents(query: str, limit: int = 25, top_k: int = 10) -> str:
     """
-    무역 문서 검색 메인 함수
+    무역 문서 검색 메인 함수 (Qdrant Vector DB 기반)
 
-    단순 질문("수출 절차는?")도, 복합 질문("수출과 수입 차이는?")도 모두 처리 가능
+    **사용 조건 (trade_instructions.txt 시나리오 기준):**
+
+    시나리오 B) 무역 실무 지식 질문 → 이 툴만 사용
+    - 예: "FOB 조건이란?", "무역 사기 예방 방법은?", "중국 의료기기 수출 인증은?"
+    - 일반적인 무역 지식, 절차, 예방법 등을 물어보는 경우
+    - 내부 문서만으로 충분 (웹 검색 불필요)
+
+    시나리오 C) 최신 정보 + 문서 내용 통합 질문 → search_web와 함께 사용
+    - 예: "최근 미국 수출 규제 변경사항과 우리 문서의 대응 방안은?"
+    - 이 툴로 먼저 실무 지식 수집 → search_web으로 최신 정보 보완
+
+    **기능:**
+    - 단순 질문("수출 절차는?")과 복합 질문("수출과 수입 차이는?") 모두 처리 가능
+    - 쿼리 자동 개선 및 복합 질문 분해
+    - 병렬 검색으로 속도 향상
+    - Reranking으로 관련도 높은 문서만 선정
 
     Args:
-        query: 사용자 질문
+        query: 사용자 질문 (원본 그대로 전달)
         limit: Qdrant에서 가져올 문서 수 (기본 25개)
-        top_k: 최종적으로 Agent에게 전달할 문서 수 (기본 5개)
+        top_k: 최종적으로 Agent에게 전달할 문서 수 (기본 10개)
 
     Returns:
         Agent가 읽을 수 있게 포맷된 문서 텍스트
