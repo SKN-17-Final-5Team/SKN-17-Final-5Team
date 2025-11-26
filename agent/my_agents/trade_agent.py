@@ -29,26 +29,35 @@ def load_instructions(filename: str = "trade_instructions.txt") -> str:
         return f.read()
 
 
-def create_trade_agent(memory_context: str = "") -> Agent:
+def create_trade_agent(memory_context: str = "", previous_messages: list = None) -> Agent:
     """
-    무역 전문가 Agent 생성 (메모리 컨텍스트 포함 가능)
+    무역 전문가 Agent 생성 (메모리 컨텍스트 및 이전 대화 포함 가능)
 
     Args:
-        memory_context: 대화 히스토리 컨텍스트 (선택)
+        memory_context: 대화 히스토리 컨텍스트 (요약, 문서 정보)
+        previous_messages: 최근 대화 히스토리 [{"role": "user", "content": "..."}, ...]
 
     Returns:
         Agent 인스턴스
     """
     base_instructions = load_instructions()
 
-    # 메모리 컨텍스트가 있으면 추가
-    if memory_context:
-        instructions = f"""
-        [대화 히스토리]
-        {memory_context}
+    # 대화 히스토리 구성
+    history_parts = []
 
-        {base_instructions}
-        """
+    if memory_context:
+        history_parts.append(f"[참고 정보]\n{memory_context}\n")
+
+    if previous_messages:
+        history_parts.append("[최근 대화]")
+        for msg in previous_messages:
+            role_label = "사용자" if msg["role"] == "user" else "어시스턴트"
+            history_parts.append(f"{role_label}: {msg['content']}")
+        history_parts.append("")
+
+    if history_parts:
+        history_text = "\n".join(history_parts)
+        instructions = f"{history_text}\n{base_instructions}"
     else:
         instructions = base_instructions
 
