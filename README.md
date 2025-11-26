@@ -1,4 +1,7 @@
 # 에디터 테스트 
+(테스트 화면)
+![test screen](./ref_images/test_screen.png)
+
 
 ## 주요 기능
 
