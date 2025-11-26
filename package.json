@@ -9,7 +9,19 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tiptap/extension-highlight": "^3.11.0",
+    "@tiptap/extension-placeholder": "^3.11.0",
+    "@tiptap/extension-table": "^3.11.0",
+    "@tiptap/extension-text-align": "^3.11.0",
+    "@tiptap/extension-underline": "^3.11.0",
+    "@tiptap/pm": "^3.11.0",
+    "@tiptap/react": "^3.11.0",
+    "@tiptap/starter-kit": "^3.11.0",
+    "@tiptap/suggestion": "^3.11.0",
+    "html2pdf.js": "^0.12.1",
+    "lucide-react": "^0.554.0",
     "next": "16.0.4",
+    "openai": "^6.9.1",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
