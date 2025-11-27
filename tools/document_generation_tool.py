@@ -100,7 +100,6 @@ def generate_trade_document(document_type: str, data_json: str) -> str:
         return f"Error reading template: {str(e)}"
 
     # Replace placeholders with data
-    # Replace placeholders with data
     for key, value in data.items():
         str_value = str(value) if value is not None else ""
         
