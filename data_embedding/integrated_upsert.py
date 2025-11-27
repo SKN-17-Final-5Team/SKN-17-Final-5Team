@@ -39,32 +39,32 @@ print(f"[INIT] OpenAI 임베딩 모델: {EMBED_MODEL}, dim={EMBED_DIM}\n")
 QDRANT_URL = os.getenv("QDRANT_URL", None)
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", None)
 
-COLLECTION_NAME = "trade_collectiont"
+COLLECTION_NAME = "trade_collection1"
 
 BASE_PATH = Path(__file__).parent 
 
 # 토큰 기반 청킹 대상 문서들
 DOCS_TOKEN = [
     {
-        "doc_id": "incoterms",
+        "doc_id": "인코텀즈 2020",
         "path": "data/Incoterms_preprocessed.md",
         "max_tokens": 1024,
         "overlap": 0.15,
     },
     {
-        "doc_id": "fraud",
+        "doc_id": "무역 사기 예방 및 대응 매뉴얼",
         "path": "data/2025무역사기예방및대응매뉴얼.md",
         "max_tokens": 128,
         "overlap": 0.2,
     },
     {
-        "doc_id": "claim",
+        "doc_id": "무역 클레임 케이스 50문 50담",
         "path": "data/무역클레임중재 50문50답(전처리).txt",
         "max_tokens": 128,
         "overlap": 0.1,
     },
     {
-        "doc_id": "certification",
+        "doc_id": "해외 인증 정보",
         "path": "data/certifications.jsonl",
         "max_tokens": 128,
         "overlap": 0.2,
@@ -384,8 +384,11 @@ def upload_chunks_to_qdrant(
     client: QdrantClient,
     collection_name: str,
     chunks: List[Dict],
-    batch_size: int = 20,
+    batch_size: int = 8,
+    max_retries: int = 3,
 ) -> None:
+    import time
+
     print(f"[QDRANT] 청크 임베딩 계산 및 업로드 시작 (collection={collection_name})")
 
     texts = [c["text"] for c in chunks]
@@ -424,18 +427,33 @@ def upload_chunks_to_qdrant(
             )
             global_point_id += 1
 
-        # 3) Qdrant upsert
+        # 3) Qdrant upsert (재시도 로직 포함)
         print(f"    [UPSERT] 배치 {batch_idx}/{total_batches} (points={len(points)}) 업로드 중...")
-        client.upsert(
-            collection_name=collection_name,
-            points=points,
-            wait=True,
-        )
+
+        for attempt in range(max_retries):
+            try:
+                client.upsert(
+                    collection_name=collection_name,
+                    points=points,
+                    wait=False,  # 비동기로 변경
+                )
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # 1, 2, 4초 대기
+                    print(f"    [RETRY] 업로드 실패, {wait_time}초 후 재시도... ({attempt + 1}/{max_retries})")
+                    time.sleep(wait_time)
+                else:
+                    print(f"    [ERROR] 배치 {batch_idx} 업로드 최종 실패: {e}")
+                    raise
+
+        # 배치 간 짧은 딜레이 (서버 부하 방지)
+        time.sleep(0.5)
 
     print(f"[QDRANT] 모든 배치 업로드 완료. 총 포인트 수: {global_point_id}\n")
 
 def get_qdrant_client():
-    return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=600)
     # return QdrantClient(
     #         host="127.0.0.1",
     #         port=6333,
