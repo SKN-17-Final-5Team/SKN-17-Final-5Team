@@ -81,7 +81,7 @@ async def search_trade_documents(query: str, limit: int = 25, top_k: int = 10) -
             content = point.payload.get("text") or point.payload.get("content") or ""
             if content:
                 content = content[:500]
-            source_tag = point.payload.get("data_source", "unknown")
+            source_tag = point.payload.get("doc_id", "unknown")
 
             # Agent에게 전달할 텍스트
             doc_text = f"[{rank}] {content}\n   출처: {source_tag}, Rerank 점수: {rerank_score:.3f}, 서브쿼리: '{sub_query}'"
